@@ -1,0 +1,48 @@
+# 1. Check if our config is linked
+ls -la /etc/nginx/sites-enabled/societybooks.codeprophet.com.bd
+
+# 2. If not found, fix it:
+rm -f /etc/nginx/sites-enabled/societybooks.codeprophet.com.bd
+ln -sf /etc/nginx/sites-available/societybooks.codeprophet.com.bd /etc/nginx/sites-enabled/
+
+# 3. Update nginx config with the new cert paths (since certbot succeeded)
+cat > /etc/nginx/sites-available/societybooks.codeprophet.com.bd << 'NGINX'
+server {
+    listen 80;
+    server_name societybooks.codeprophet.com.bd;
+    return 301 https://$host$request_uri;
+}
+
+server {
+    listen 443 ssl http2;
+    server_name societybooks.codeprophet.com.bd;
+
+    root /var/www/societybooks;
+    index index.html;
+
+    ssl_certificate /etc/letsencrypt/live/societybooks.codeprophet.com.bd/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/societybooks.codeprophet.com.bd/privkey.pem;
+    ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_ciphers HIGH:!aNULL:!MD5;
+
+    gzip on;
+    gzip_types text/plain text/css application/json application/javascript text/xml application/xml text/javascript image/svg+xml;
+    gzip_min_length 1000;
+
+    location / {
+        try_files $uri $uri/ /index.html;
+    }
+
+    location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot)$ {
+        expires 30d;
+        add_header Cache-Control "public, immutable";
+    }
+
+    add_header X-Frame-Options "DENY" always;
+    add_header X-Content-Type-Options "nosniff" always;
+    add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+}
+NGINX
+
+# 4. Test and reload
+nginx -t && systemctl reload nginx

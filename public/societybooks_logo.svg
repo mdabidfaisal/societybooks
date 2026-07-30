@@ -1,0 +1,24 @@
+<svg width="100%" viewBox="0 0 690 270" xmlns="http://www.w3.org/2000/svg" role="img">
+<title>SocietyBooks logo</title>
+<defs>
+<clipPath id="pageclip">
+<rect x="0" y="0" width="60" height="70" rx="4"/>
+</clipPath>
+</defs>
+
+<g transform="translate(70,95)">
+  <path d="M0 8 C0 4 3 1 8 1 C22 1 32 4 40 10 L40 78 C32 72 22 69 8 69 C3 69 0 72 0 76 Z" fill="#1E4FA0"/>
+  <path d="M80 8 C80 4 77 1 72 1 C58 1 48 4 40 10 L40 78 C48 72 58 69 72 69 C77 69 80 72 80 76 Z" fill="#3B7DDB"/>
+  <line x1="12" y1="16" x2="34" y2="21" stroke="#ffffff" stroke-width="2" stroke-linecap="round" opacity="0.85"/>
+  <line x1="12" y1="27" x2="34" y2="32" stroke="#ffffff" stroke-width="2" stroke-linecap="round" opacity="0.85"/>
+  <line x1="12" y1="38" x2="34" y2="43" stroke="#ffffff" stroke-width="2" stroke-linecap="round" opacity="0.85"/>
+  <line x1="46" y1="21" x2="68" y2="16" stroke="#ffffff" stroke-width="2" stroke-linecap="round" opacity="0.85"/>
+  <line x1="46" y1="32" x2="68" y2="27" stroke="#ffffff" stroke-width="2" stroke-linecap="round" opacity="0.85"/>
+  <line x1="46" y1="43" x2="68" y2="38" stroke="#ffffff" stroke-width="2" stroke-linecap="round" opacity="0.85"/>
+</g>
+
+<text x="200" y="150" font-family="Arial, sans-serif" font-size="44" font-weight="700" fill="#0F2E5C">Society<tspan fill="#2E6FD9">Books</tspan></text>
+
+<text x="201" y="178" font-family="Arial, sans-serif" font-size="15" font-weight="400" fill="#5A7290" letter-spacing="2">COOPERATIVE ACCOUNTS, MADE CLEAR</text>
+
+</svg>
