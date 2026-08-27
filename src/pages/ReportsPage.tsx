@@ -1,60 +1,61 @@
 import { useNavigate } from 'react-router-dom'
-import { Card } from '../components/ui/Card'
+import { useTranslation } from 'react-i18next'
 import { BarChart3, DollarSign, Users, BookOpen, AlertTriangle, TrendingDown, UserCheck } from 'lucide-react'
-
-const reports = [
-  {
-    title: 'Daily Cash Summary',
-    description: 'All cash receipts and payments for a selected date — deposits, withdrawals, and net cash flow.',
-    path: '/reports/daily-cash',
-    icon: DollarSign,
-    color: 'text-emerald-600 bg-emerald-100',
-  },
-  {
-    title: 'Society Summary',
-    description: 'Key metrics at a glance — members, savings, loans outstanding, cash in hand, and more.',
-    path: '/reports/society-summary',
-    icon: Users,
-    color: 'text-blue-600 bg-blue-100',
-  },
-  {
-    title: 'Loan Register',
-    description: 'Complete list of all loans with status, amounts, profit method, and member details.',
-    path: '/reports/loan-register',
-    icon: BookOpen,
-    color: 'text-purple-600 bg-purple-100',
-  },
-  {
-    title: 'Overdue EMIs',
-    description: 'All overdue EMI installments with days past due, member info, and amounts.',
-    path: '/reports/overdue-emis',
-    icon: AlertTriangle,
-    color: 'text-red-600 bg-red-100',
-  },
-  {
-    title: 'Profit & Loss',
-    description: 'Income and expense breakdown for any date range with net profit calculation.',
-    path: '/reports/pnl',
-    icon: TrendingDown,
-    color: 'text-orange-600 bg-orange-100',
-  },
-  {
-    title: 'Member Ledger',
-    description: 'Per-member transaction history — savings transactions, loan details, and profit distributions.',
-    path: '/reports/member-ledger',
-    icon: UserCheck,
-    color: 'text-indigo-600 bg-indigo-100',
-  },
-]
 
 export default function ReportsPage() {
   const navigate = useNavigate()
+  const { t } = useTranslation()
+
+  const reports = [
+    {
+      title: t('reports.dailyCashReport'),
+      description: t('reports.dailyCashDesc'),
+      path: '/reports/daily-cash',
+      icon: DollarSign,
+      color: 'text-emerald-600 bg-emerald-100',
+    },
+    {
+      title: t('reports.societySummary'),
+      description: t('reports.societySummaryDesc'),
+      path: '/reports/society-summary',
+      icon: Users,
+      color: 'text-blue-600 bg-blue-100',
+    },
+    {
+      title: t('reports.loanRegister'),
+      description: t('reports.loanRegisterDesc'),
+      path: '/reports/loan-register',
+      icon: BookOpen,
+      color: 'text-purple-600 bg-purple-100',
+    },
+    {
+      title: t('reports.overdueReport'),
+      description: t('reports.overdueDesc'),
+      path: '/reports/overdue-emis',
+      icon: AlertTriangle,
+      color: 'text-red-600 bg-red-100',
+    },
+    {
+      title: t('reports.profitLossReport'),
+      description: t('reports.profitLossDesc'),
+      path: '/reports/pnl',
+      icon: TrendingDown,
+      color: 'text-orange-600 bg-orange-100',
+    },
+    {
+      title: t('reports.memberLedger'),
+      description: t('reports.memberLedgerDesc'),
+      path: '/reports/member-ledger',
+      icon: UserCheck,
+      color: 'text-indigo-600 bg-indigo-100',
+    },
+  ]
 
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">Reports</h1>
-        <p className="text-sm text-gray-500 mt-1">Select a report to view detailed information.</p>
+        <h1 className="text-2xl font-bold text-gray-900">{t('reports.title')}</h1>
+        <p className="text-sm text-gray-500 mt-1">{t('reports.generateReport')}</p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

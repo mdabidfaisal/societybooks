@@ -4,6 +4,7 @@ import { Badge } from '../ui/Badge'
 import { formatCurrency, formatDate } from '../../lib/utils'
 import { ApprovalWorkflow } from './ApprovalWorkflow'
 import { EMIChart } from './EMIChart'
+import { useTranslation } from 'react-i18next'
 import type { LoanWithDetails } from '../../types/loan'
 import { User } from 'lucide-react'
 
@@ -22,6 +23,7 @@ interface LoanDetailProps {
 
 export function LoanDetail({ loan, onRefresh }: LoanDetailProps) {
   const { role } = useAuth()
+  const { t } = useTranslation()
   const isAdmin = role === 'society_admin'
 
   return (
@@ -31,15 +33,15 @@ export function LoanDetail({ loan, onRefresh }: LoanDetailProps) {
           <div className="space-y-4">
             <div>
               <h2 className="text-lg font-bold">{loan.loan_number}</h2>
-              <Badge variant={loanStatusVariant[loan.status]}>{loan.status}</Badge>
+              <Badge variant={loanStatusVariant[loan.status]}>{t(`status.${loan.status}`, { defaultValue: loan.status })}</Badge>
             </div>
             <div className="text-sm space-y-2">
-              <div className="flex justify-between"><span className="text-gray-500">Amount</span><span className="font-medium">{formatCurrency(loan.amount)}</span></div>
-              <div className="flex justify-between"><span className="text-gray-500">Tenure</span><span className="font-medium">{loan.tenure_months} months</span></div>
-              <div className="flex justify-between"><span className="text-gray-500">Profit Method</span><span className="font-medium">{loan.profit_method === 'flat' ? 'Flat Rate' : 'Reducing Balance'}</span></div>
-              <div className="flex justify-between"><span className="text-gray-500">Profit Rate</span><span className="font-medium">{loan.profit_rate}%</span></div>
-              {loan.approved_at && <div className="flex justify-between"><span className="text-gray-500">Approved</span><span className="font-medium">{formatDate(loan.approved_at)}</span></div>}
-              {loan.disbursed_at && <div className="flex justify-between"><span className="text-gray-500">Disbursed</span><span className="font-medium">{formatDate(loan.disbursed_at)}</span></div>}
+              <div className="flex justify-between"><span className="text-gray-500">{t('common.amount')}</span><span className="font-medium">{formatCurrency(loan.amount)}</span></div>
+              <div className="flex justify-between"><span className="text-gray-500">{t('loans.tenureCol')}</span><span className="font-medium">{loan.tenure_months} {t('loans.monthsSuffix')}</span></div>
+              <div className="flex justify-between"><span className="text-gray-500">{t('loans.profitMethod')}</span><span className="font-medium">{loan.profit_method === 'flat' ? t('loans.flatRate') : t('loans.reducingBalance')}</span></div>
+              <div className="flex justify-between"><span className="text-gray-500">{t('loans.profitRate')}</span><span className="font-medium">{loan.profit_rate}%</span></div>
+              {loan.approved_at && <div className="flex justify-between"><span className="text-gray-500">{t('status.approved')}</span><span className="font-medium">{formatDate(loan.approved_at)}</span></div>}
+              {loan.disbursed_at && <div className="flex justify-between"><span className="text-gray-500">{t('loans.disbursed')}</span><span className="font-medium">{formatDate(loan.disbursed_at)}</span></div>}
             </div>
             {isAdmin && <ApprovalWorkflow loanId={loan.id} currentStatus={loan.status} onAction={onRefresh} />}
           </div>
@@ -60,7 +62,7 @@ export function LoanDetail({ loan, onRefresh }: LoanDetailProps) {
         )}
       </div>
 
-      <Card className="lg:col-span-2" title="EMI Schedule">
+      <Card className="lg:col-span-2" title={t('loans.emiScheduleTitle')}>
         <EMIChart loanId={loan.id} loanStatus={loan.status} />
       </Card>
     </div>

@@ -5,6 +5,7 @@ import { useAccounting, type ChartOfAccountData } from '../../hooks/useAccountin
 import { Select } from '../ui/Select'
 import { Button } from '../ui/Button'
 import { Spinner } from '../ui/Spinner'
+import { useTranslation } from 'react-i18next'
 import { Check, AlertCircle, BookOpen } from 'lucide-react'
 
 interface MappingEntry {
@@ -15,23 +16,24 @@ interface MappingEntry {
   credit_account_code: string
 }
 
-const MAPPING_DEFS: { value: string; label: string; description: string }[] = [
-  { value: 'savings_deposit', label: 'Savings Deposit', description: 'Member deposits money into savings' },
-  { value: 'savings_withdrawal', label: 'Savings Withdrawal', description: 'Member withdraws from savings' },
-  { value: 'savings_profit', label: 'Savings Profit', description: 'Profit credited to member savings' },
-  { value: 'loan_disbursement', label: 'Loan Disbursement', description: 'Loan amount given to member' },
-  { value: 'loan_repayment_principal', label: 'Loan Repayment (Principal)', description: 'Principal portion of EMI repayment' },
-  { value: 'loan_repayment_profit', label: 'Loan Repayment (Profit)', description: 'Profit portion of EMI repayment' },
-]
-
 export function AccountMappingsForm() {
   const { samitiId } = useAuth()
+  const { t } = useTranslation()
   const { accounts, fetchAccounts } = useAccounting()
   const [mappings, setMappings] = useState<Record<string, { debit: string; credit: string }>>({})
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  const MAPPING_DEFS: { value: string; label: string; description: string }[] = [
+    { value: 'savings_deposit', label: t('settings.mapSavingsDeposit'), description: t('settings.mapSavingsDepositDesc') },
+    { value: 'savings_withdrawal', label: t('settings.mapSavingsWithdrawal'), description: t('settings.mapSavingsWithdrawalDesc') },
+    { value: 'savings_profit', label: t('settings.mapSavingsProfit'), description: t('settings.mapSavingsProfitDesc') },
+    { value: 'loan_disbursement', label: t('settings.mapLoanDisbursement'), description: t('settings.mapLoanDisbursementDesc') },
+    { value: 'loan_repayment_principal', label: t('settings.mapLoanRepaymentPrincipal'), description: t('settings.mapLoanRepaymentPrincipalDesc') },
+    { value: 'loan_repayment_profit', label: t('settings.mapLoanRepaymentProfit'), description: t('settings.mapLoanRepaymentProfitDesc') },
+  ]
 
   useEffect(() => {
     fetchAccounts()
@@ -92,7 +94,7 @@ export function AccountMappingsForm() {
       setSaved(true)
       setTimeout(() => setSaved(false), 3000)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Save failed')
+      setError(err instanceof Error ? err.message : t('settings.saveFailed'))
     }
     setSaving(false)
   }
@@ -106,8 +108,7 @@ export function AccountMappingsForm() {
   return (
     <div className="space-y-4">
       <p className="text-sm text-gray-500">
-        Map each transaction type to the debit and credit accounts in your chart of accounts.
-        Without mappings, transactions will still work but won't auto-generate journal entries.
+        {t('settings.mappingsIntro')}
       </p>
 
       {error && (
@@ -118,14 +119,14 @@ export function AccountMappingsForm() {
 
       {saved && (
         <div className="bg-green-50 border border-green-200 text-green-700 text-sm rounded-lg p-3 flex items-center gap-2">
-          <Check className="h-4 w-4 shrink-0" />Mappings saved successfully.
+          <Check className="h-4 w-4 shrink-0" />{t('settings.mappingsSaved')}
         </div>
       )}
 
       {accountOptions.length === 0 && (
         <div className="bg-yellow-50 border border-yellow-200 text-yellow-700 text-sm rounded-lg p-3 flex items-center gap-2">
           <AlertCircle className="h-4 w-4 shrink-0" />
-          No accounts found. <Button size="sm" variant="ghost" onClick={() => window.location.href = '/accounting/accounts'}>Create accounts first</Button>
+          {t('settings.noAccountsFound')} <Button size="sm" variant="ghost" onClick={() => window.location.href = '/accounting/accounts'}>{t('settings.createAccountsFirst')}</Button>
         </div>
       )}
 
@@ -141,16 +142,16 @@ export function AccountMappingsForm() {
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <Select
-                  options={[{ value: '', label: 'Select debit account...' }, ...accountOptions]}
+                  options={[{ value: '', label: t('settings.selectDebitAccount') }, ...accountOptions]}
                   value={m?.debit || ''}
                   onChange={(e) => updateMapping(def.value, 'debit', e.target.value)}
-                  placeholder="Debit account"
+                  placeholder={t('settings.debitAccount')}
                 />
                 <Select
-                  options={[{ value: '', label: 'Select credit account...' }, ...accountOptions]}
+                  options={[{ value: '', label: t('settings.selectCreditAccount') }, ...accountOptions]}
                   value={m?.credit || ''}
                   onChange={(e) => updateMapping(def.value, 'credit', e.target.value)}
-                  placeholder="Credit account"
+                  placeholder={t('settings.creditAccount')}
                 />
               </div>
             </div>
@@ -159,7 +160,7 @@ export function AccountMappingsForm() {
       </div>
 
       <div className="flex justify-end pt-2">
-        <Button onClick={handleSave} loading={saving}>Save Mappings</Button>
+        <Button onClick={handleSave} loading={saving}>{t('settings.saveMappings')}</Button>
       </div>
     </div>
   )

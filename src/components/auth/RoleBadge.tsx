@@ -1,5 +1,6 @@
 import { Badge } from '../ui/Badge'
-import { ROLE_LABELS, type Role } from '../../config/constants'
+import { useTranslation } from 'react-i18next'
+import type { Role } from '../../config/constants'
 
 interface RoleBadgeProps {
   role: string
@@ -13,9 +14,10 @@ const variantMap: Record<string, 'default' | 'success' | 'warning' | 'danger' | 
 }
 
 export function RoleBadge({ role }: RoleBadgeProps) {
+  const { t } = useTranslation()
   return (
     <Badge variant={variantMap[role] || 'default'}>
-      {ROLE_LABELS[role as Role] || role}
+      {t(`roles.${role as Role}`)}
     </Badge>
   )
 }

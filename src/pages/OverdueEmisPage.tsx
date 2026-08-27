@@ -8,11 +8,14 @@ import { Badge } from '../components/ui/Badge'
 import { Spinner } from '../components/ui/Spinner'
 import { EmptyState } from '../components/ui/EmptyState'
 import { RefreshButton } from '../components/ui/RefreshButton'
+import { ReportExportButtons } from '../components/reports/ReportExportButtons'
 import { formatCurrency, formatDate } from '../lib/utils'
+import { useTranslation } from 'react-i18next'
 import { AlertTriangle, Search } from 'lucide-react'
 
 export default function OverdueEmisPage() {
   const { samitiId } = useAuth()
+  const { t } = useTranslation()
   const today = new Date().toISOString().split('T')[0]
   const [asOfDate, setAsOfDate] = useState(today)
   const [emis, setEmis] = useState<{
@@ -85,22 +88,43 @@ export default function OverdueEmisPage() {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-gray-900">Overdue EMIs</h1>
-        <RefreshButton onRefresh={loadOverdue} />
+        <h1 className="text-2xl font-bold text-gray-900">{t('overdueEmis.title')}</h1>
+        <div className="flex items-center gap-2">
+          <ReportExportButtons
+            filename={`overdue-emis-${asOfDate}`}
+            title={t('overdueEmis.title')}
+            subtitle={t('overdueEmis.exportAsOf', { date: asOfDate })}
+            headers={[t('overdueEmis.member'), t('overdueEmis.memberNo'), t('overdueEmis.loanNo'), t('overdueEmis.installment'), t('overdueEmis.dueDate'), t('overdueEmis.amount'), t('overdueEmis.paid'), t('overdueEmis.remaining'), t('overdueEmis.daysOverdue'), t('overdueEmis.status')]}
+            rows={filtered.map((e) => [
+              e.member_name,
+              e.member_number,
+              e.loan_number,
+              String(e.installment_no),
+              formatDate(e.due_date),
+              formatCurrency(e.total_amount),
+              e.paid_amount > 0 ? formatCurrency(e.paid_amount) : '',
+              formatCurrency(e.total_amount - e.paid_amount),
+              `${e.daysOverdue}d`,
+              t(`status.${e.status}`, { defaultValue: e.status }),
+            ])}
+            totals={[{ label: t('overdueEmis.totalOverdue'), value: formatCurrency(totalOverdue) }]}
+          />
+          <RefreshButton onRefresh={loadOverdue} />
+        </div>
       </div>
 
       <Card>
         <div className="flex items-end gap-4 flex-wrap">
           <div>
-            <label className="block text-xs font-medium text-gray-500 mb-1">As of Date</label>
+            <label className="block text-xs font-medium text-gray-500 mb-1">{t('overdueEmis.asOfDate')}</label>
             <Input type="date" value={asOfDate} onChange={(e) => setAsOfDate(e.target.value)} />
           </div>
-          <Button onClick={loadOverdue} variant="secondary">Load</Button>
+          <Button onClick={loadOverdue} variant="secondary">{t('overdueEmis.load')}</Button>
           <div className="relative ml-auto">
             <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-400" />
             <input
               type="text"
-              placeholder="Search member or loan..."
+              placeholder={t('overdueEmis.searchPlaceholder')}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="pl-8 pr-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none w-64"
@@ -117,33 +141,33 @@ export default function OverdueEmisPage() {
             <div className="flex items-center gap-3">
               <AlertTriangle className="h-8 w-8 text-red-500" />
               <div>
-                <p className="text-sm text-gray-500">Total Overdue Amount</p>
+                <p className="text-sm text-gray-500">{t('overdueEmis.totalOverdue')}</p>
                 <p className="text-3xl font-bold text-red-600">{formatCurrency(totalOverdue)}</p>
               </div>
               <div className="ml-auto text-right">
-                <p className="text-sm text-gray-500">Overdue Installments</p>
+                <p className="text-sm text-gray-500">{t('overdueEmis.overdueInstallments')}</p>
                 <p className="text-3xl font-bold text-gray-900">{emis.length}</p>
               </div>
             </div>
           </Card>
 
           {filtered.length === 0 ? (
-            <EmptyState title="No overdue EMIs" description="All installments are up to date!" />
+            <EmptyState title={t('overdueEmis.noOverdueTitle')} description={t('overdueEmis.allUpToDate')} />
           ) : (
             <Card>
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase">
-                      <th className="py-3 px-3">Member</th>
-                      <th className="py-3 px-3">Loan #</th>
-                      <th className="py-3 px-3 text-right">Inst.</th>
-                      <th className="py-3 px-3">Due Date</th>
-                      <th className="py-3 px-3 text-right">Amount</th>
-                      <th className="py-3 px-3 text-right">Paid</th>
-                      <th className="py-3 px-3 text-right">Remaining</th>
-                      <th className="py-3 px-3 text-right">Days Overdue</th>
-                      <th className="py-3 px-3">Status</th>
+                      <th className="py-3 px-3">{t('overdueEmis.member')}</th>
+                      <th className="py-3 px-3">{t('overdueEmis.loanNo')}</th>
+                      <th className="py-3 px-3 text-right">{t('overdueEmis.installment')}</th>
+                      <th className="py-3 px-3">{t('overdueEmis.dueDate')}</th>
+                      <th className="py-3 px-3 text-right">{t('overdueEmis.amount')}</th>
+                      <th className="py-3 px-3 text-right">{t('overdueEmis.paid')}</th>
+                      <th className="py-3 px-3 text-right">{t('overdueEmis.remaining')}</th>
+                      <th className="py-3 px-3 text-right">{t('overdueEmis.daysOverdue')}</th>
+                      <th className="py-3 px-3">{t('overdueEmis.status')}</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-100">
@@ -166,7 +190,7 @@ export default function OverdueEmisPage() {
                               {e.daysOverdue}d
                             </span>
                           </td>
-                          <td className="py-3 px-3"><Badge variant={e.status === 'partial' ? 'warning' : 'danger'}>{e.status}</Badge></td>
+                          <td className="py-3 px-3"><Badge variant={e.status === 'partial' ? 'warning' : 'danger'}>{t(`status.${e.status}`, { defaultValue: e.status })}</Badge></td>
                         </tr>
                       )
                     })}

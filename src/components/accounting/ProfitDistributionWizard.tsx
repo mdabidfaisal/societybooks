@@ -8,6 +8,7 @@ import { useAuth } from '../../hooks/useAuth'
 import { useProfitDistribution } from '../../hooks/useProfitDistribution'
 import { useUIStore } from '../../store/uiStore'
 import { formatCurrency } from '../../lib/utils'
+import { useTranslation } from 'react-i18next'
 import { computeWeightedDistribution, getProfitPeriodDates } from '../../lib/weightedSavings'
 
 interface MemberShare {
@@ -22,6 +23,7 @@ export function ProfitDistributionWizard() {
   const { samitiId } = useAuth()
   const { getAvailableProfit, createDistribution, createDistributionItems, confirmDistribution } = useProfitDistribution()
   const closeModal = useUIStore((s) => s.closeModal)
+  const { t } = useTranslation()
 
   const [periodSettings, setPeriodSettings] = useState<{
     profit_period_1_start_month: number
@@ -106,7 +108,7 @@ export function ProfitDistributionWizard() {
         .eq('status', 'active')
 
       if (!memberRows || memberRows.length === 0) {
-        setError('No active members found')
+        setError(t('accounting.noActiveMembers'))
         setMemberLoading(false)
         return
       }
@@ -123,7 +125,7 @@ export function ProfitDistributionWizard() {
       // Time-weighted savings balance
       const shares = await computeWeightedDistribution(samitiId!, fromDate, toDate, distributeAmount)
       if (shares.length === 0) {
-        setError('No active members with savings found')
+        setError(t('accounting.noActiveMembersWithSavings'))
         setMemberLoading(false)
         return
       }
@@ -142,9 +144,15 @@ export function ProfitDistributionWizard() {
       const { data: distro, error: createErr } = await createDistribution({
         total_profit_amount: profitAmount,
         distribution_basis: basis === 'equal' ? 'equal' : 'savings',
-        notes: `Distributed ${distributePercent}% of ${formatCurrency(profitAmount)} profit for ${fromDate} to ${toDate} (weighted balance basis)`,
+        notes: t('accounting.distributionNotes', {
+          percent: distributePercent,
+          amount: formatCurrency(profitAmount),
+          from: fromDate,
+          to: toDate,
+          basis: basis === 'equal' ? t('accounting.equalShareShort') : t('accounting.weightedSavingsShort'),
+        }),
       })
-      if (createErr || !distro) throw new Error(createErr?.message || 'Failed to create distribution')
+      if (createErr || !distro) throw new Error(createErr?.message || t('accounting.createDistributionFailed'))
 
       const { data: { user } } = await supabase.auth.getUser()
 
@@ -196,7 +204,7 @@ export function ProfitDistributionWizard() {
           performed_by: user?.id,
         } as never).select().single()
 
-        if (savingsErr) throw new Error(`Failed to credit savings for ${m.name}: ${savingsErr.message}`)
+        if (savingsErr) throw new Error(t('accounting.creditSavingsFailed', { name: m.name, message: savingsErr.message }))
 
         // Link the distribution item to the savings transaction
         if (savingsTx) {
@@ -210,7 +218,7 @@ export function ProfitDistributionWizard() {
       await confirmDistribution(distro.id)
       closeModal()
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Distribution failed')
+      setError(err instanceof Error ? err.message : t('accounting.distributionFailed'))
     }
     setDistributing(false)
   }
@@ -226,15 +234,15 @@ export function ProfitDistributionWizard() {
 
       {step === 1 && (
         <>
-          <h3 className="font-semibold text-gray-900">Step 1: Select Period & Configure</h3>
+          <h3 className="font-semibold text-gray-900">{t('accounting.step1Title')}</h3>
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs font-medium text-gray-500 mb-1">Profit Period From</label>
+              <label className="block text-xs font-medium text-gray-500 mb-1">{t('accounting.profitPeriodFrom')}</label>
               <Input type="date" value={fromDate} onChange={(e) => setFromDate(e.target.value)} />
             </div>
             <div>
-              <label className="block text-xs font-medium text-gray-500 mb-1">To</label>
+              <label className="block text-xs font-medium text-gray-500 mb-1">{t('accounting.to')}</label>
               <Input type="date" value={toDate} onChange={(e) => setToDate(e.target.value)} />
             </div>
           </div>
@@ -242,17 +250,17 @@ export function ProfitDistributionWizard() {
           {periodSettings && (
             <div className="flex gap-2">
               <Button size="sm" variant="secondary" onClick={() => setPeriod(1)}>
-                Period 1 (Month {periodSettings.profit_period_1_start_month}–{periodSettings.profit_period_1_end_month})
+                {t('accounting.period1', { start: periodSettings.profit_period_1_start_month, end: periodSettings.profit_period_1_end_month })}
               </Button>
               <Button size="sm" variant="secondary" onClick={() => setPeriod(2)}>
-                Period 2 (Month {periodSettings.profit_period_2_start_month}–{periodSettings.profit_period_2_end_month})
+                {t('accounting.period2', { start: periodSettings.profit_period_2_start_month, end: periodSettings.profit_period_2_end_month })}
               </Button>
             </div>
           )}
 
           <div className="bg-blue-50 rounded-lg p-4">
             <div className="flex items-center justify-between">
-              <span className="text-sm text-gray-600">Net Profit for Period</span>
+              <span className="text-sm text-gray-600">{t('accounting.netProfitForPeriod')}</span>
               {profitLoading ? (
                 <Spinner size="sm" />
               ) : (
@@ -263,18 +271,18 @@ export function ProfitDistributionWizard() {
 
           <Select
             id="basis"
-            label="Distribution Basis"
+            label={t('accounting.distributionBasis')}
             value={basis}
             onChange={(e) => setBasis(e.target.value as typeof basis)}
             options={[
-              { value: 'savings_weighted', label: 'By Weighted Savings Balance (fair — based on time held)' },
-              { value: 'equal', label: 'Equal Share (same amount per member)' },
+              { value: 'savings_weighted', label: t('accounting.weightedSavingsLabel') },
+              { value: 'equal', label: t('accounting.equalShareLabel') },
             ]}
           />
 
           <div>
             <label className="block text-xs font-medium text-gray-500 mb-1">
-              Distribute {distributePercent}% of Profit
+              {t('accounting.distributePercentOfProfit', { percent: distributePercent })}
             </label>
             <input
               type="range"
@@ -285,15 +293,15 @@ export function ProfitDistributionWizard() {
               className="w-full"
             />
             <div className="flex justify-between text-xs text-gray-400">
-              <span>Reserve: {formatCurrency(netReserve)}</span>
-              <span>Distribute: {formatCurrency(Math.round(profitAmount * distributePercent / 100 * 100) / 100)}</span>
+              <span>{t('accounting.reserve')}: {formatCurrency(netReserve)}</span>
+              <span>{t('accounting.distribute')}: {formatCurrency(Math.round(profitAmount * distributePercent / 100 * 100) / 100)}</span>
             </div>
           </div>
 
           <div className="flex justify-end gap-2 pt-2">
-            <Button variant="secondary" onClick={closeModal}>Cancel</Button>
+            <Button variant="secondary" onClick={closeModal}>{t('common.cancel')}</Button>
             <Button onClick={calculateShares} loading={memberLoading}>
-              Preview Distribution
+              {t('accounting.previewDistribution')}
             </Button>
           </div>
         </>
@@ -301,41 +309,41 @@ export function ProfitDistributionWizard() {
 
       {step === 2 && (
         <>
-          <h3 className="font-semibold text-gray-900">Step 2: Preview Per-Member Distribution</h3>
+          <h3 className="font-semibold text-gray-900">{t('accounting.step2Title')}</h3>
 
           <div className="bg-gray-50 rounded-lg p-3 text-sm space-y-1">
             <div className="flex justify-between">
-              <span className="text-gray-500">Period</span>
+              <span className="text-gray-500">{t('accounting.period')}</span>
               <span>{fromDate} → {toDate}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-gray-500">Net Profit</span>
+              <span className="text-gray-500">{t('accounting.netProfitLabel')}</span>
               <span className="font-medium">{formatCurrency(profitAmount)}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-gray-500">Distributing</span>
+              <span className="text-gray-500">{t('accounting.distributingLabel')}</span>
               <span className="font-medium text-green-700">{distributePercent}% = {formatCurrency(totalDistribute)}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-gray-500">Reserve</span>
+              <span className="text-gray-500">{t('accounting.reserve')}</span>
               <span className="font-medium text-orange-700">{formatCurrency(netReserve)}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-gray-500">Basis</span>
-              <span>{basis === 'equal' ? 'Equal Share' : 'Weighted Savings Balance'}</span>
+              <span className="text-gray-500">{t('accounting.distributionBasis')}</span>
+              <span>{basis === 'equal' ? t('accounting.equalShareShort') : t('accounting.weightedSavingsShort')}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-gray-500">Members</span>
+              <span className="text-gray-500">{t('accounting.membersLabel2')}</span>
               <span>{members.length}</span>
             </div>
           </div>
 
           <div className="max-h-64 overflow-y-auto border rounded-lg divide-y">
             <div className="sticky top-0 bg-gray-100 px-3 py-2 flex text-xs font-medium text-gray-600 uppercase tracking-wider">
-              <span className="w-16 shrink-0">ID</span>
-              <span className="flex-1">Member</span>
-              {basis === 'savings_weighted' && <span className="w-28 text-right shrink-0">Avg Balance</span>}
-              <span className="w-28 text-right shrink-0">Distribution</span>
+              <span className="w-16 shrink-0">{t('accounting.id')}</span>
+              <span className="flex-1">{t('accounting.member')}</span>
+              {basis === 'savings_weighted' && <span className="w-28 text-right shrink-0">{t('accounting.avgBalance')}</span>}
+              <span className="w-28 text-right shrink-0">{t('accounting.distribution')}</span>
             </div>
             {members.map((m) => (
               <div key={m.memberId} className="px-3 py-2 flex items-center text-sm hover:bg-gray-50">
@@ -348,13 +356,13 @@ export function ProfitDistributionWizard() {
           </div>
 
           <div className="bg-gray-100 rounded-lg px-3 py-2 flex justify-between text-sm font-bold">
-            <span>Total Distributed</span>
+            <span>{t('accounting.totalDistributed')}</span>
             <span className="text-green-700">{formatCurrency(totalDistribute)}</span>
           </div>
 
           <div className="flex justify-end gap-2 pt-2">
-            <Button variant="secondary" onClick={() => setStep(1)} disabled={distributing}>Back</Button>
-            <Button onClick={handleDistribute} loading={distributing}>Confirm & Distribute</Button>
+            <Button variant="secondary" onClick={() => setStep(1)} disabled={distributing}>{t('common.back')}</Button>
+            <Button onClick={handleDistribute} loading={distributing}>{t('accounting.confirmDistribute')}</Button>
           </div>
         </>
       )}

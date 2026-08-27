@@ -7,18 +7,20 @@ import { RefreshButton } from '../components/ui/RefreshButton'
 import { SamitiDetail } from '../components/super-admin/SamitiDetail'
 import { SamitiForm, type SamitiFormData } from '../components/super-admin/SamitiForm'
 import { supabase } from '../lib/supabase'
+import { useTranslation } from 'react-i18next'
 import { ArrowLeft, Pencil, Trash2, ToggleLeft, ToggleRight, AlertTriangle } from 'lucide-react'
 import type { SamitiRow } from '../components/super-admin/SamitiList'
 
 const deletionConstraints = [
-  'Members', 'Savings Accounts', 'Savings Transactions',
-  'Loans & EMI Schedules', 'Chart of Accounts',
-  'Journal Entries', 'Profit Distributions',
+  'superAdmin.members', 'superAdmin.savingsAccounts', 'superAdmin.savingsTransactions',
+  'superAdmin.loansAndEmi', 'accounting.chartOfAccounts',
+  'accounting.journalEntries', 'superAdmin.profitDistributions',
 ]
 
 export default function SamitiDetailPage() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
+  const { t } = useTranslation()
   const activeModal = useUIStore((s) => s.activeModal)
   const openModal = useUIStore((s) => s.openModal)
   const closeModal = useUIStore((s) => s.closeModal)
@@ -86,7 +88,7 @@ export default function SamitiDetailPage() {
     }
 
     setIsActive(data.is_active)
-    setFormSuccess('Samiti updated successfully!')
+    setFormSuccess(t('superAdmin.updatedSuccess'))
     setFormSubmitting(false)
     setRefreshKey((k) => k + 1)
   }
@@ -130,19 +132,19 @@ export default function SamitiDetailPage() {
           <Button variant="ghost" size="sm" onClick={() => navigate('/super-admin')}>
             <ArrowLeft className="h-5 w-5" />
           </Button>
-          <h1 className="text-2xl font-bold text-gray-900">Samiti Details</h1>
+          <h1 className="text-2xl font-bold text-gray-900">{t('superAdmin.samitiDetails')}</h1>
         </div>
         <div className="flex items-center gap-2">
           <RefreshButton onRefresh={() => setRefreshKey((k) => k + 1)} />
-          <Button variant="ghost" size="sm" onClick={handleToggleActive} disabled={togglingActive} title={isActive ? 'Deactivate' : 'Activate'}>
+          <Button variant="ghost" size="sm" onClick={handleToggleActive} disabled={togglingActive} title={isActive ? t('superAdmin.deactivate') : t('superAdmin.activate')}>
             {isActive ? <ToggleRight className="h-4 w-4 text-green-600 mr-1" /> : <ToggleLeft className="h-4 w-4 text-gray-400 mr-1" />}
-            {isActive ? 'Deactivate' : 'Activate'}
+            {isActive ? t('superAdmin.deactivate') : t('superAdmin.activate')}
           </Button>
           <Button variant="secondary" size="sm" onClick={handleEdit}>
-            <Pencil className="h-4 w-4 mr-1" /> Edit
+            <Pencil className="h-4 w-4 mr-1" /> {t('superAdmin.editSamiti')}
           </Button>
           <Button variant="danger" size="sm" onClick={() => setDeleteConfirm(true)}>
-            <Trash2 className="h-4 w-4 mr-1" /> Delete
+            <Trash2 className="h-4 w-4 mr-1" /> {t('common.delete')}
           </Button>
         </div>
       </div>
@@ -150,64 +152,61 @@ export default function SamitiDetailPage() {
       <SamitiDetail key={refreshKey} samitiId={id} />
 
       {activeModal === 'edit-samiti' && editDefaults && (
-        <Modal title="Edit Samiti" size="xl">
+        <Modal title={t('superAdmin.editSamiti')} size="xl">
           <SamitiForm
             defaultValues={editDefaults}
             onSubmit={handleUpdate}
             isSubmitting={formSubmitting}
             error={formError}
             success={formSuccess}
-            submitLabel="Update Samiti"
+            submitLabel={t('superAdmin.updateSamiti')}
           />
           <div className="flex justify-end pt-2">
-            <Button variant="secondary" onClick={closeModal}>Close</Button>
+            <Button variant="secondary" onClick={closeModal}>{t('common.close')}</Button>
           </div>
         </Modal>
       )}
 
       {deleteConfirm && (
-        <Modal title="Delete Samiti" size="lg">
+        <Modal title={t('superAdmin.deleteSamiti')} size="lg">
           <div className="space-y-4">
             <div className="bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg p-4">
               <div className="flex items-start gap-3">
                 <AlertTriangle className="h-5 w-5 text-red-500 mt-0.5 shrink-0" />
                 <div>
-                  <p className="font-medium">This action cannot be undone.</p>
+                  <p className="font-medium">{t('superAdmin.cannotBeUndone')}</p>
                   <p className="mt-1">
-                    Deleting this samiti will permanently remove all data across{' '}
-                    <strong>{deletionConstraints.length} tables</strong>.
+                    {t('superAdmin.deletingThisSamiti', { count: deletionConstraints.length })}
                   </p>
                 </div>
               </div>
             </div>
 
             <div className="bg-amber-50 border border-amber-200 text-amber-800 text-sm rounded-lg p-4">
-              <p className="font-medium mb-2">The following data will also be deleted:</p>
+              <p className="font-medium mb-2">{t('superAdmin.alsoDeleted')}</p>
               <ul className="list-disc list-inside space-y-1">
                 {deletionConstraints.map((label) => (
-                  <li key={label}>{label}</li>
+                  <li key={label}>{t(label)}</li>
                 ))}
               </ul>
             </div>
 
             <div className="bg-blue-50 border border-blue-200 text-blue-700 text-sm rounded-lg p-4">
-              <p className="font-medium">Recommendation:</p>
-              <p className="mt-1">
-                Instead of deleting, use the <strong>Deactivate</strong> button to suspend services while preserving data.
-              </p>
+              <p className="font-medium">{t('superAdmin.recommendation')}</p>
+              <p className="mt-1">{t('superAdmin.deactivateRecommendDetail')}</p>
             </div>
 
             {deleteError && (
               <div className="bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg p-3">
-                <p className="font-medium">Foreign key constraint error</p>
+                <p className="font-medium">{t('superAdmin.fkError')}</p>
                 <p className="mt-1 text-xs">{deleteError}</p>
-                <p className="mt-1">Delete related records first or use deactivate instead.</p>
+                <p className="mt-1">{t('superAdmin.deleteRelated')}</p>
               </div>
             )}
 
             <div className="flex justify-end gap-2">
-              <Button variant="secondary" onClick={() => { setDeleteConfirm(false); setDeleteError(null) }}>Cancel</Button>
-              <Button variant="danger" onClick={handleDelete} loading={deleteSubmitting}>Delete Permanently</Button>
+              <Button variant="secondary" onClick={() => { setDeleteConfirm(false); setDeleteError(null) }}>{t('common.cancel')}</Button>
+              <Button variant="danger" onClick={handleDelete} loading={deleteSubmitting}>{t('superAdmin.deletePermanently')}</Button>
             </div>
           </div>
         </Modal>

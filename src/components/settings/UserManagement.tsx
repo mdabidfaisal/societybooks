@@ -11,17 +11,16 @@ import { supabase } from '../../lib/supabase'
 import { supabaseAdmin } from '../../lib/supabase-admin'
 import { RefreshButton } from '../ui/RefreshButton'
 import { useAuth } from '../../hooks/useAuth'
+import { useTranslation } from 'react-i18next'
 import { UserPlus, Pencil, Trash2, AlertTriangle } from 'lucide-react'
 
-const userSchema = z.object({
-  email: z.string().email('Valid email required'),
-  password: z.string().min(6, 'Password must be at least 6 characters').or(z.literal('')),
-  name: z.string().min(1, 'Name is required'),
-  role: z.enum(['manager', 'member']),
-  member_id: z.string().optional(),
-})
-
-type UserFormData = z.infer<typeof userSchema>
+type UserFormData = {
+  email: string
+  password: string
+  name: string
+  role: 'manager' | 'member'
+  member_id?: string
+}
 
 interface SamitiUser {
   id: string
@@ -35,6 +34,7 @@ interface SamitiUser {
 
 export function UserManagement() {
   const { samitiId } = useAuth()
+  const { t } = useTranslation()
   const [users, setUsers] = useState<SamitiUser[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -43,6 +43,14 @@ export function UserManagement() {
   const [editingUser, setEditingUser] = useState<SamitiUser | null>(null)
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null)
   const [members, setMembers] = useState<{ value: string; label: string }[]>([])
+
+  const userSchema = z.object({
+    email: z.string().email(t('settings.validEmail')),
+    password: z.string().min(6, t('settings.passwordMinLength')).or(z.literal('')),
+    name: z.string().min(1, t('settings.nameRequired')),
+    role: z.enum(['manager', 'member']),
+    member_id: z.string().optional(),
+  })
 
   const { register, handleSubmit, reset, watch, formState: { errors, isSubmitting } } = useForm<UserFormData>({
     resolver: zodResolver(userSchema),
@@ -112,7 +120,7 @@ export function UserManagement() {
       if (updateError) {
         setError(updateError.message)
       } else {
-        setSuccess(`User ${formData.email} updated successfully.`)
+        setSuccess(t('settings.userUpdated', { email: formData.email }))
         cancelForm()
         fetchUsers()
       }
@@ -135,7 +143,7 @@ export function UserManagement() {
       if (createError) {
         setError(createError.message)
       } else {
-        setSuccess(`User ${formData.email} created successfully.`)
+        setSuccess(t('settings.userCreated', { email: formData.email }))
         cancelForm()
         fetchUsers()
       }
@@ -150,7 +158,7 @@ export function UserManagement() {
     if (deleteError) {
       setError(deleteError.message)
     } else {
-      setSuccess('User deleted successfully.')
+      setSuccess(t('settings.userDeleted'))
       setDeleteConfirm(null)
       fetchUsers()
     }
@@ -166,17 +174,17 @@ export function UserManagement() {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <div>
-          <p className="text-sm text-gray-500">Manage user accounts for this samiti.</p>
+          <p className="text-sm text-gray-500">{t('settings.manageUsersDesc')}</p>
           <div className="flex gap-4 mt-1 text-xs text-gray-400">
-            <span>{userCounts.total} total</span>
-            <span>{userCounts.managers} managers</span>
-            <span>{userCounts.members} members</span>
+            <span>{t('settings.countsTotal', { count: userCounts.total })}</span>
+            <span>{t('settings.countsManagers', { count: userCounts.managers })}</span>
+            <span>{t('settings.countsMembers', { count: userCounts.members })}</span>
           </div>
         </div>
         <div className="flex items-center gap-2">
           <RefreshButton onRefresh={fetchUsers} />
           <Button size="sm" onClick={openCreateForm}>
-            <UserPlus className="h-4 w-4 mr-1" /> Add User
+            <UserPlus className="h-4 w-4 mr-1" /> {t('settings.addUser')}
           </Button>
         </div>
       </div>
@@ -193,43 +201,43 @@ export function UserManagement() {
 
       {showForm && (
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-3 p-4 bg-gray-50 rounded-lg border">
-          <p className="text-sm font-medium text-gray-700">{editingUser ? 'Edit User' : 'Create New User'}</p>
+          <p className="text-sm font-medium text-gray-700">{editingUser ? t('settings.editUserTitle') : t('settings.createNewUserTitle')}</p>
 
-          <Input id="u-name" label="Full Name" {...register('name')} error={errors.name?.message} />
+          <Input id="u-name" label={t('settings.fullName')} {...register('name')} error={errors.name?.message} />
 
-          <Input id="u-email" label="Email" type="email" {...register('email')} error={errors.email?.message} />
+          <Input id="u-email" label={t('common.email')} type="email" {...register('email')} error={errors.email?.message} />
 
           <Input
             id="u-password"
-            label={editingUser ? 'New Password (leave blank to keep)' : 'Password'}
+            label={editingUser ? t('settings.newPasswordKeep') : t('settings.passwordLabel')}
             type="text"
             {...register('password')}
             error={errors.password?.message}
           />
 
           <div>
-            <label className="block text-xs font-medium text-gray-500 mb-1">Role</label>
+            <label className="block text-xs font-medium text-gray-500 mb-1">{t('settings.userRole')}</label>
             <Select {...register('role')} options={[
-              { value: 'manager', label: 'Manager' },
-              { value: 'member', label: 'Member' },
+              { value: 'manager', label: t('roles.manager') },
+              { value: 'member', label: t('roles.member') },
             ]} />
             {errors.role?.message && <p className="text-xs text-red-500 mt-1">{errors.role?.message}</p>}
           </div>
 
           {selectedRole === 'member' && (
             <div>
-              <label className="block text-xs font-medium text-gray-500 mb-1">Link to Member</label>
+              <label className="block text-xs font-medium text-gray-500 mb-1">{t('settings.linkToMember')}</label>
               <Select {...register('member_id')} options={[
-                { value: '', label: 'Select a member...' },
+                { value: '', label: t('settings.selectMemberEllipsis') },
                 ...members,
               ]} />
             </div>
           )}
 
           <div className="flex justify-end gap-2">
-            <Button type="button" variant="secondary" size="sm" onClick={cancelForm}>Cancel</Button>
+            <Button type="button" variant="secondary" size="sm" onClick={cancelForm}>{t('common.cancel')}</Button>
             <Button type="submit" size="sm" loading={isSubmitting}>
-              {editingUser ? 'Update' : 'Create'}
+              {editingUser ? t('settings.updateAction') : t('settings.createAction')}
             </Button>
           </div>
         </form>
@@ -238,18 +246,18 @@ export function UserManagement() {
       {loading ? (
         <Spinner size="sm" />
       ) : users.length === 0 ? (
-        <p className="text-sm text-gray-500">No user accounts yet.</p>
+        <p className="text-sm text-gray-500">{t('settings.noUserAccounts')}</p>
       ) : (
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
               <tr className="bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase">
-                <th className="py-2 px-3">Name</th>
-                <th className="py-2 px-3">Email</th>
-                <th className="py-2 px-3">Role</th>
-                <th className="py-2 px-3">Last Sign In</th>
-                <th className="py-2 px-3">Created</th>
-                <th className="py-2 px-3 text-right">Actions</th>
+                <th className="py-2 px-3">{t('common.name')}</th>
+                <th className="py-2 px-3">{t('common.email')}</th>
+                <th className="py-2 px-3">{t('settings.userRole')}</th>
+                <th className="py-2 px-3">{t('settings.lastSignIn')}</th>
+                <th className="py-2 px-3">{t('common.created')}</th>
+                <th className="py-2 px-3 text-right">{t('common.actions')}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
@@ -259,11 +267,11 @@ export function UserManagement() {
                   <td className="py-2 px-3 text-gray-600">{u.email}</td>
                   <td className="py-2 px-3">
                     <Badge variant={u.role === 'manager' ? 'warning' : u.role === 'member' ? 'info' : 'default'}>
-                      {u.role}
+                      {u.role === 'manager' ? t('roles.manager') : u.role === 'member' ? t('roles.member') : u.role}
                     </Badge>
                   </td>
                   <td className="py-2 px-3 text-xs text-gray-400">
-                    {u.last_sign_in_at ? new Date(u.last_sign_in_at).toLocaleDateString() : 'Never'}
+                    {u.last_sign_in_at ? new Date(u.last_sign_in_at).toLocaleDateString() : t('settings.never')}
                   </td>
                   <td className="py-2 px-3 text-xs text-gray-400">
                     {new Date(u.created_at).toLocaleDateString()}
@@ -273,20 +281,20 @@ export function UserManagement() {
                       <button
                         onClick={() => openEditForm(u)}
                         className="p-1 text-gray-400 hover:text-blue-600 cursor-pointer"
-                        title="Edit"
+                        title={t('common.edit')}
                       >
                         <Pencil className="h-4 w-4" />
                       </button>
                       {deleteConfirm === u.id ? (
                         <div className="flex items-center gap-1">
-                          <Button size="sm" variant="danger" onClick={() => handleDelete(u.id)}>Confirm</Button>
-                          <Button size="sm" variant="secondary" onClick={() => setDeleteConfirm(null)}>No</Button>
+                          <Button size="sm" variant="danger" onClick={() => handleDelete(u.id)}>{t('common.confirm')}</Button>
+                          <Button size="sm" variant="secondary" onClick={() => setDeleteConfirm(null)}>{t('common.no')}</Button>
                         </div>
                       ) : (
                         <button
                           onClick={() => setDeleteConfirm(u.id)}
                           className="p-1 text-gray-400 hover:text-red-600 cursor-pointer"
-                          title="Delete"
+                          title={t('common.delete')}
                         >
                           <Trash2 className="h-4 w-4" />
                         </button>

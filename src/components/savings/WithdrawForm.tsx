@@ -6,6 +6,7 @@ import { Input } from '../ui/Input'
 import { Select } from '../ui/Select'
 import { useSavings } from '../../hooks/useSavings'
 import { useUIStore } from '../../store/uiStore'
+import { useTranslation } from 'react-i18next'
 import type { SavingsAccountData } from '../../hooks/useSavings'
 
 const PAYMENT_METHODS = [
@@ -17,8 +18,8 @@ const PAYMENT_METHODS = [
 ]
 
 const withdrawSchema = z.object({
-  savings_account_id: z.string().min(1, 'Account is required'),
-  amount: z.coerce.number().positive('Amount must be positive'),
+  savings_account_id: z.string().min(1),
+  amount: z.coerce.number().positive(),
   reference: z.string().optional(),
   payment_method: z.string().optional(),
 })
@@ -33,6 +34,14 @@ interface WithdrawFormProps {
 export function WithdrawForm({ accounts, onSuccess }: WithdrawFormProps) {
   const { recordTransaction } = useSavings()
   const closeModal = useUIStore((s) => s.closeModal)
+  const { t } = useTranslation()
+
+  const withdrawSchema = z.object({
+    savings_account_id: z.string().min(1, t('savings.accountRequired')),
+    amount: z.coerce.number().positive(t('savings.amountPositive')),
+    reference: z.string().optional(),
+    payment_method: z.string().optional(),
+  })
 
   const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<WithdrawFormData>({
     resolver: zodResolver(withdrawSchema),
@@ -50,7 +59,7 @@ export function WithdrawForm({ accounts, onSuccess }: WithdrawFormProps) {
       onSuccess?.()
       closeModal()
     } catch (err) {
-      alert(err instanceof Error ? err.message : 'Transaction failed')
+      alert(err instanceof Error ? err.message : t('savings.transactionFailed'))
     }
   }
 
@@ -58,24 +67,24 @@ export function WithdrawForm({ accounts, onSuccess }: WithdrawFormProps) {
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
       <Select
         id="savings_account_id"
-        label="Savings Account"
-        placeholder="Select account..."
+        label={t('savings.savingsAccount')}
+        placeholder={t('savings.selectAccount')}
         options={accounts.map((a) => ({ value: a.id, label: `${a.account_number} (${a.account_type})` }))}
         {...register('savings_account_id')}
         error={errors.savings_account_id?.message}
       />
-      <Input id="amount" label="Amount (৳)" type="number" step="0.01" {...register('amount')} error={errors.amount?.message} />
+      <Input id="amount" label={t('savings.amountTaka')} type="number" step="0.01" {...register('amount')} error={errors.amount?.message} />
       <Select
         id="payment_method"
-        label="Payment Method"
-        placeholder="Select method..."
-        options={PAYMENT_METHODS}
+        label={t('savings.paymentMethod')}
+        placeholder={t('savings.selectMethod')}
+        options={PAYMENT_METHODS.map((m) => ({ value: m.value, label: t(`savings.${m.value}`) }))}
         {...register('payment_method')}
       />
-      <Input id="reference" label="Reference (optional)" {...register('reference')} />
+      <Input id="reference" label={t('savings.referenceOptional')} {...register('reference')} />
       <div className="flex justify-end gap-2 pt-2">
-        <Button type="button" variant="secondary" onClick={closeModal}>Cancel</Button>
-        <Button type="submit" loading={isSubmitting} variant="danger">Record Withdrawal</Button>
+        <Button type="button" variant="secondary" onClick={closeModal}>{t('common.cancel')}</Button>
+        <Button type="submit" loading={isSubmitting} variant="danger">{t('savings.recordWithdrawal')}</Button>
       </div>
     </form>
   )

@@ -154,26 +154,6 @@ export function useSavings() {
       payment_method: tx.payment_method || null,
       performed_by: user?.id,
     } as never).select().single()
-    if (!error && data && samitiId) {
-      const { autoJournalize } = await import('../lib/accounting')
-      let jTxType = ''
-      if (tx.transaction_type === 'deposit') jTxType = 'savings_deposit'
-      else if (tx.transaction_type === 'withdrawal') jTxType = 'savings_withdrawal'
-      else if (tx.transaction_type === 'profit') jTxType = 'savings_profit'
-
-      if (jTxType) {
-        await autoJournalize({
-          samitiId,
-          transactionType: jTxType,
-          description: `Savings ${tx.transaction_type} - ${tx.reference || data.id}`,
-          amount: tx.amount,
-          referenceId: data.id,
-          referenceTable: 'savings_transactions',
-          performedBy: user?.id || '',
-          entryDate: new Date().toISOString().split('T')[0],
-        })
-      }
-    }
     return { data: data as SavingsTransactionData | null, error }
   }
 

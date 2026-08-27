@@ -12,14 +12,16 @@ import { RefreshButton } from '../components/ui/RefreshButton'
 import { TransactionList } from '../components/savings/TransactionList'
 import { DepositForm } from '../components/savings/DepositForm'
 import { WithdrawForm } from '../components/savings/WithdrawForm'
-import { PassbookPDF } from '../components/savings/PassbookPDF'
+import { ReportExportButtons } from '../components/reports/ReportExportButtons'
 import { formatCurrency, formatDate } from '../lib/utils'
+import { useTranslation } from 'react-i18next'
 import { useSavings, type SavingsAccountData, type SavingsTransactionData } from '../hooks/useSavings'
-import { ArrowLeft, Wallet, ArrowDownToLine, ArrowUpFromLine, Download } from 'lucide-react'
+import { ArrowLeft, Wallet, ArrowDownToLine, ArrowUpFromLine } from 'lucide-react'
 
 export default function SavingDetailPage() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
+  const { t } = useTranslation()
   const activeModal = useUIStore((s) => s.activeModal)
   const openModal = useUIStore((s) => s.openModal)
   const { accounts, getTransactions } = useSavings()
@@ -66,7 +68,7 @@ export default function SavingDetailPage() {
   useEffect(() => { loadData() }, [loadData])
 
   if (loading) return <Spinner size="lg" />
-  if (!account) return <div className="text-center py-12 text-gray-500">Account not found</div>
+  if (!account) return <div className="text-center py-12 text-gray-500">{t('savings.accountNotFound')}</div>
 
   return (
     <div className="space-y-6">
@@ -86,15 +88,29 @@ export default function SavingDetailPage() {
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <PassbookPDF transactions={transactions} memberName={account.member_name || 'Unknown'} accountNumber={account.account_number} />
+          <ReportExportButtons
+            filename={`savings-ledger-${account.account_number}`}
+            title={t('savings.savingsLedger')}
+            subtitle={`${t('savings.accountNo')}: ${account.account_number} · ${t('membership.fullName')}: ${account.member_name || '-'}${account.member_number ? ` (${account.member_number})` : ''} · ${t('common.type')}: ${account.account_type} · ${t('common.status')}: ${account.status}`}
+            headers={[t('common.date'), t('common.type'), t('common.amount'), t('common.balance'), t('savings.reference'), t('common.notes')]}
+            rows={transactions.map((tx) => [
+              formatDate(tx.created_at),
+              tx.transaction_type,
+              tx.amount,
+              tx.balance_after,
+              tx.reference || '-',
+              tx.reason_note || '-',
+            ])}
+            totals={[{ label: t('savings.balance'), value: formatCurrency(balance) }]}
+          />
           {canTransact && (
             <Button variant="secondary" size="sm" onClick={() => openModal('deposit')}>
-              <ArrowDownToLine className="h-4 w-4 mr-1" /> Deposit
+              <ArrowDownToLine className="h-4 w-4 mr-1" /> {t('savings.deposit')}
             </Button>
           )}
           {canTransact && (
             <Button variant="danger" size="sm" onClick={() => openModal('withdraw')}>
-              <ArrowUpFromLine className="h-4 w-4 mr-1" /> Withdraw
+              <ArrowUpFromLine className="h-4 w-4 mr-1" /> {t('savings.withdraw')}
             </Button>
           )}
           <RefreshButton onRefresh={loadData} />
@@ -102,16 +118,16 @@ export default function SavingDetailPage() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card title="Current Balance" className="border-l-4 border-l-blue-500">
+        <Card title={t('savings.balance')} className="border-l-4 border-l-blue-500">
           <p className="text-2xl font-bold text-gray-900">{formatCurrency(balance)}</p>
         </Card>
-        <Card title="Account Type" className="border-l-4 border-l-green-500">
+        <Card title={t('common.type')} className="border-l-4 border-l-green-500">
           <p className="text-lg font-medium text-gray-900 capitalize">{account.account_type}</p>
         </Card>
-        <Card title="Status" className="border-l-4 border-l-yellow-500">
-          <Badge variant={account.status === 'active' ? 'success' : 'danger'}>{account.status}</Badge>
+        <Card title={t('common.status')} className="border-l-4 border-l-yellow-500">
+          <Badge variant={account.status === 'active' ? 'success' : 'danger'}>{t(`status.${account.status}`)}</Badge>
         </Card>
-        <Card title="Opened" className="border-l-4 border-l-purple-500">
+        <Card title={t('savings.opened')} className="border-l-4 border-l-purple-500">
           <p className="text-lg font-medium text-gray-900">{formatDate(account.opened_date)}</p>
         </Card>
       </div>
@@ -120,8 +136,8 @@ export default function SavingDetailPage() {
         title={
           <div className="flex items-center gap-2">
             <Wallet className="h-5 w-5 text-gray-400" />
-            <span>Transaction Ledger</span>
-            <span className="text-xs text-gray-400 font-normal">({transactions.length} entries)</span>
+            <span>{t('savings.savingsLedger')}</span>
+            <span className="text-xs text-gray-400 font-normal">({transactions.length})</span>
           </div>
         }
       >
@@ -129,12 +145,12 @@ export default function SavingDetailPage() {
       </Card>
 
       {activeModal === 'deposit' && (
-        <Modal title={`Deposit - ${account.account_number}`} size="lg">
+        <Modal title={`${t('savings.deposit')} - ${account.account_number}`} size="lg">
           <DepositForm accounts={[account]} onSuccess={loadData} />
         </Modal>
       )}
       {activeModal === 'withdraw' && (
-        <Modal title={`Withdraw - ${account.account_number}`} size="lg">
+        <Modal title={`${t('savings.withdraw')} - ${account.account_number}`} size="lg">
           <WithdrawForm accounts={[account]} onSuccess={loadData} />
         </Modal>
       )}

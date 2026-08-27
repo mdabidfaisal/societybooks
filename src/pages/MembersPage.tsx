@@ -10,10 +10,14 @@ import { RefreshButton } from '../components/ui/RefreshButton'
 import { MemberCard } from '../components/members/MemberCard'
 import { MemberForm } from '../components/members/MemberForm'
 import { useUIStore } from '../store/uiStore'
+import { ReportExportButtons } from '../components/reports/ReportExportButtons'
+import { formatDate } from '../lib/utils'
+import { useTranslation } from 'react-i18next'
 import { Search, UserPlus, AlertCircle, ToggleLeft, ToggleRight, Pencil } from 'lucide-react'
 
 export default function MembersPage() {
   const { members, loading, error, fetchMembers, toggleMemberStatus } = useMembers()
+  const { t } = useTranslation()
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState<string>('all')
   const activeModal = useUIStore((s) => s.activeModal)
@@ -37,11 +41,28 @@ export default function MembersPage() {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-gray-900">Members</h1>
+        <h1 className="text-2xl font-bold text-gray-900">{t('membership.title')}</h1>
         <div className="flex items-center gap-2">
+          {filtered.length > 0 && (
+            <ReportExportButtons
+              filename={`members-${new Date().toISOString().split('T')[0]}`}
+              title={t('membership.title')}
+              headers={[t('membership.memberCode'), t('membership.fullName'), t('membership.occupation'), t('membership.nid'), t('common.phone'), t('common.status'), t('common.date')]}
+              rows={filtered.map((m) => [
+                m.member_number,
+                m.name,
+                m.designation || '-',
+                m.college_name || '-',
+                m.phone || '-',
+                m.status,
+                formatDate(m.join_date),
+              ])}
+              orientation="landscape"
+            />
+          )}
           <RefreshButton onRefresh={fetchMembers} />
           <Button onClick={() => openModal('add-member')}>
-            <UserPlus className="h-4 w-4 mr-2" /> Add Member
+            <UserPlus className="h-4 w-4 mr-2" /> {t('membership.addMember')}
           </Button>
         </div>
       </div>
@@ -50,7 +71,7 @@ export default function MembersPage() {
         <div className="flex items-center gap-2 max-w-md flex-1 min-w-[200px]">
           <Search className="h-5 w-5 text-gray-400 shrink-0" />
           <Input
-            placeholder="Search by name, ID, phone, college, designation..."
+            placeholder={t('membership.searchPlaceholder')}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
@@ -66,7 +87,7 @@ export default function MembersPage() {
                   : 'text-gray-500 hover:text-gray-700'
               }`}
             >
-              {s.charAt(0).toUpperCase() + s.slice(1)}
+              {s === 'all' ? t('common.all') : t(`membership.${s}`)}
             </button>
           ))}
         </div>
@@ -76,14 +97,14 @@ export default function MembersPage() {
         <div className="bg-red-50 border border-red-200 rounded-lg p-4 flex items-start gap-3">
           <AlertCircle className="h-5 w-5 text-red-500 mt-0.5" />
           <div>
-            <p className="font-medium text-red-800">Error loading members</p>
+            <p className="font-medium text-red-800">{t('common.error')}</p>
             <p className="text-sm text-red-600 mt-1">{error}</p>
           </div>
         </div>
       )}
 
       {!error && filtered.length === 0 && (
-        <EmptyState title="No members found" description={search || statusFilter !== 'all' ? 'Try adjusting your search or filter.' : 'Add your first member to get started.'} />
+        <EmptyState title={t('membership.noMembers')} description={search || statusFilter !== 'all' ? t('common.emptySearch') : t('common.emptyStart')} />
       )}
 
       {!error && filtered.length > 0 && (
@@ -92,10 +113,10 @@ export default function MembersPage() {
             <div key={m.id} className="relative group">
               <MemberCard member={m} />
               <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                <Button variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); openModal('edit-member', { member: m }) }} title="Edit">
+                <Button variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); openModal('edit-member', { member: m }) }} title={t('common.edit')}>
                   <Pencil className="h-4 w-4" />
                 </Button>
-                <Button variant="ghost" size="sm" onClick={async (e) => { e.stopPropagation(); await toggleMemberStatus(m.id, m.status); fetchMembers() }} title={m.status === 'active' ? 'Deactivate' : 'Activate'}>
+                <Button variant="ghost" size="sm" onClick={async (e) => { e.stopPropagation(); await toggleMemberStatus(m.id, m.status); fetchMembers() }} title={m.status === 'active' ? t('common.inactive') : t('common.active')}>
                   {m.status === 'active'
                     ? <ToggleRight className="h-4 w-4 text-green-600" />
                     : <ToggleLeft className="h-4 w-4 text-gray-400" />
@@ -108,13 +129,13 @@ export default function MembersPage() {
       )}
 
       {activeModal === 'add-member' && (
-        <Modal title="Add New Member" size="xl">
+        <Modal title={t('membership.addMember')} size="xl">
           <MemberForm />
         </Modal>
       )}
 
       {activeModal === 'edit-member' && modalData?.member && (
-        <Modal title={`Edit: ${modalData.member.name}`} size="xl">
+        <Modal title={`${t('membership.editMember')}: ${modalData.member.name}`} size="xl">
           <MemberForm editMember={modalData.member} />
         </Modal>
       )}

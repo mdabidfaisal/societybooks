@@ -8,41 +8,50 @@ import { Select } from '../ui/Select'
 import { Spinner } from '../ui/Spinner'
 import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../hooks/useAuth'
+import { useTranslation } from 'react-i18next'
 
-const profitSchema = z.object({
-  default_profit_method: z.enum(['flat', 'reducing_balance']),
-  default_profit_rate: z.coerce.number().min(0).max(100),
-  profit_period_1_start_month: z.coerce.number().int().min(1).max(12),
-  profit_period_1_end_month: z.coerce.number().int().min(1).max(12),
-  profit_period_2_start_month: z.coerce.number().int().min(1).max(12),
-  profit_period_2_end_month: z.coerce.number().int().min(1).max(12),
-}).refine(
-  (data) => data.profit_period_1_end_month >= data.profit_period_1_start_month,
-  { message: 'Period 1 end must be >= start', path: ['profit_period_1_end_month'] }
-).refine(
-  (data) => data.profit_period_2_end_month >= data.profit_period_2_start_month,
-  { message: 'Period 2 end must be >= start', path: ['profit_period_2_end_month'] }
-).refine(
-  (data) => data.profit_period_2_start_month > data.profit_period_1_end_month,
-  { message: 'Period 2 must start after Period 1 ends', path: ['profit_period_2_start_month'] }
-)
-
-type ProfitFormData = z.infer<typeof profitSchema>
-
-const MONTHS = [
-  { value: 1, label: 'January' }, { value: 2, label: 'February' },
-  { value: 3, label: 'March' }, { value: 4, label: 'April' },
-  { value: 5, label: 'May' }, { value: 6, label: 'June' },
-  { value: 7, label: 'July' }, { value: 8, label: 'August' },
-  { value: 9, label: 'September' }, { value: 10, label: 'October' },
-  { value: 11, label: 'November' }, { value: 12, label: 'December' },
-]
+type ProfitFormData = {
+  default_profit_method: 'flat' | 'reducing_balance'
+  default_profit_rate: number
+  profit_period_1_start_month: number
+  profit_period_1_end_month: number
+  profit_period_2_start_month: number
+  profit_period_2_end_month: number
+}
 
 export function ProfitConfigForm() {
   const { samitiId } = useAuth()
+  const { t } = useTranslation()
   const [loading, setLoading] = useState(true)
   const [success, setSuccess] = useState(false)
   const [fetchError, setFetchError] = useState<string | null>(null)
+
+  const profitSchema = z.object({
+    default_profit_method: z.enum(['flat', 'reducing_balance']),
+    default_profit_rate: z.coerce.number().min(0).max(100),
+    profit_period_1_start_month: z.coerce.number().int().min(1).max(12),
+    profit_period_1_end_month: z.coerce.number().int().min(1).max(12),
+    profit_period_2_start_month: z.coerce.number().int().min(1).max(12),
+    profit_period_2_end_month: z.coerce.number().int().min(1).max(12),
+  }).refine(
+    (data) => data.profit_period_1_end_month >= data.profit_period_1_start_month,
+    { message: t('settings.period1EndGteStart'), path: ['profit_period_1_end_month'] }
+  ).refine(
+    (data) => data.profit_period_2_end_month >= data.profit_period_2_start_month,
+    { message: t('settings.period2EndGteStart'), path: ['profit_period_2_end_month'] }
+  ).refine(
+    (data) => data.profit_period_2_start_month > data.profit_period_1_end_month,
+    { message: t('settings.period2AfterPeriod1'), path: ['profit_period_2_start_month'] }
+  )
+
+  const MONTHS = [
+    { value: 1, label: t('months.january') }, { value: 2, label: t('months.february') },
+    { value: 3, label: t('months.march') }, { value: 4, label: t('months.april') },
+    { value: 5, label: t('months.may') }, { value: 6, label: t('months.june') },
+    { value: 7, label: t('months.july') }, { value: 8, label: t('months.august') },
+    { value: 9, label: t('months.september') }, { value: 10, label: t('months.october') },
+    { value: 11, label: t('months.november') }, { value: 12, label: t('months.december') },
+  ]
 
   const { register, handleSubmit, reset, watch, formState: { errors, isSubmitting, isDirty } } = useForm<ProfitFormData>({
     resolver: zodResolver(profitSchema),
@@ -98,22 +107,22 @@ export function ProfitConfigForm() {
         <div className="bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg p-3">{fetchError}</div>
       )}
       {success && (
-        <div className="bg-green-50 border border-green-200 text-green-700 text-sm rounded-lg p-3">Settings saved.</div>
+        <div className="bg-green-50 border border-green-200 text-green-700 text-sm rounded-lg p-3">{t('settings.saveSuccess')}</div>
       )}
       <Select
         id="default_profit_method"
-        label="Loan Profit Method"
-        placeholder="Select method..."
+        label={t('settings.loanProfitMethod')}
+        placeholder={t('settings.selectMethodPlaceholder')}
         options={[
-          { value: 'flat', label: 'Flat Rate' },
-          { value: 'reducing_balance', label: 'Reducing Balance' },
+          { value: 'flat', label: t('loans.flatRate') },
+          { value: 'reducing_balance', label: t('loans.reducingBalance') },
         ]}
         {...register('default_profit_method')}
         error={errors.default_profit_method?.message}
       />
       <Input
         id="default_profit_rate"
-        label="Default Loan Profit Rate (% per year)"
+        label={t('settings.defaultLoanProfitRate')}
         type="number"
         step="0.01"
         {...register('default_profit_rate')}
@@ -121,24 +130,23 @@ export function ProfitConfigForm() {
       />
 
       <div className="border-t pt-4">
-        <h4 className="text-sm font-semibold text-gray-700 mb-2">Profit Distribution Periods</h4>
+        <h4 className="text-sm font-semibold text-gray-700 mb-2">{t('settings.profitDistributionPeriods')}</h4>
         <p className="text-xs text-gray-500 mb-3">
-          Members earn profit proportional to their time-weighted average savings balance.
-          Define two distribution periods per year.
+          {t('settings.profitPeriodsDesc')}
         </p>
 
         <div className="grid grid-cols-2 gap-4">
           <div className="bg-blue-50 rounded-lg p-3 space-y-2">
-            <p className="text-xs font-medium text-blue-700 uppercase">Period 1</p>
+            <p className="text-xs font-medium text-blue-700 uppercase">{t('settings.period1')}</p>
             <div className="grid grid-cols-2 gap-2">
               <Select
-                label="Start Month"
+                label={t('settings.startMonth')}
                 options={MONTHS.map((m) => ({ value: String(m.value), label: m.label }))}
                 value={String(watch('profit_period_1_start_month'))}
                 {...register('profit_period_1_start_month', { valueAsNumber: true })}
               />
               <Select
-                label="End Month"
+                label={t('settings.endMonth')}
                 options={MONTHS.map((m) => ({ value: String(m.value), label: m.label }))}
                 value={String(watch('profit_period_1_end_month'))}
                 {...register('profit_period_1_end_month', { valueAsNumber: true })}
@@ -150,16 +158,16 @@ export function ProfitConfigForm() {
           </div>
 
           <div className="bg-green-50 rounded-lg p-3 space-y-2">
-            <p className="text-xs font-medium text-green-700 uppercase">Period 2</p>
+            <p className="text-xs font-medium text-green-700 uppercase">{t('settings.period2')}</p>
             <div className="grid grid-cols-2 gap-2">
               <Select
-                label="Start Month"
+                label={t('settings.startMonth')}
                 options={MONTHS.map((m) => ({ value: String(m.value), label: m.label }))}
                 value={String(watch('profit_period_2_start_month'))}
                 {...register('profit_period_2_start_month', { valueAsNumber: true })}
               />
               <Select
-                label="End Month"
+                label={t('settings.endMonth')}
                 options={MONTHS.map((m) => ({ value: String(m.value), label: m.label }))}
                 value={String(watch('profit_period_2_end_month'))}
                 {...register('profit_period_2_end_month', { valueAsNumber: true })}
@@ -176,7 +184,7 @@ export function ProfitConfigForm() {
       </div>
 
       <div className="flex justify-end pt-2">
-        <Button type="submit" loading={isSubmitting} disabled={!isDirty}>Save</Button>
+        <Button type="submit" loading={isSubmitting} disabled={!isDirty}>{t('common.save')}</Button>
       </div>
     </form>
   )

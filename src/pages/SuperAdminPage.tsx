@@ -10,6 +10,9 @@ import { RefreshButton } from '../components/ui/RefreshButton'
 import { useUIStore } from '../store/uiStore'
 import { SamitiList, type SamitiRow } from '../components/super-admin/SamitiList'
 import { SamitiForm, type SamitiFormData, defaultSamitiValues } from '../components/super-admin/SamitiForm'
+import { ReportExportButtons } from '../components/reports/ReportExportButtons'
+import { formatDate } from '../lib/utils'
+import { useTranslation } from 'react-i18next'
 import { Building2, Users, Plus, AlertTriangle } from 'lucide-react'
 
 interface DashboardStats {
@@ -21,13 +24,13 @@ interface DashboardStats {
 }
 
 const deletionConstraints = [
-  { table: 'members', label: 'Members', fk: 'members_samiti_id_fkey' },
-  { table: 'savings_accounts', label: 'Savings Accounts', fk: 'savings_accounts_samiti_id_fkey' },
-  { table: 'savings_transactions', label: 'Savings Transactions', fk: 'savings_transactions_samiti_id_fkey' },
-  { table: 'loans', label: 'Loans & EMI Schedules', fk: 'loans_samiti_id_fkey' },
-  { table: 'chart_of_accounts', label: 'Chart of Accounts', fk: 'chart_of_accounts_samiti_id_fkey' },
-  { table: 'journal_entries', label: 'Journal Entries', fk: 'journal_entries_samiti_id_fkey' },
-  { table: 'profit_distributions', label: 'Profit Distributions', fk: 'profit_distributions_samiti_id_fkey' },
+  { table: 'members', label: 'superAdmin.members', fk: 'members_samiti_id_fkey' },
+  { table: 'savings_accounts', label: 'superAdmin.savingsAccounts', fk: 'savings_accounts_samiti_id_fkey' },
+  { table: 'savings_transactions', label: 'superAdmin.savingsTransactions', fk: 'savings_transactions_samiti_id_fkey' },
+  { table: 'loans', label: 'superAdmin.loansAndEmi', fk: 'loans_samiti_id_fkey' },
+  { table: 'chart_of_accounts', label: 'accounting.chartOfAccounts', fk: 'chart_of_accounts_samiti_id_fkey' },
+  { table: 'journal_entries', label: 'accounting.journalEntries', fk: 'journal_entries_samiti_id_fkey' },
+  { table: 'profit_distributions', label: 'superAdmin.profitDistributions', fk: 'profit_distributions_samiti_id_fkey' },
 ]
 
 export default function SuperAdminPage() {
@@ -35,6 +38,7 @@ export default function SuperAdminPage() {
   const openModal = useUIStore((s) => s.openModal)
   const closeModal = useUIStore((s) => s.closeModal)
   const modalData = useUIStore((s) => s.modalData) as { samiti?: SamitiRow } | null
+  const { t } = useTranslation()
 
   const [samitis, setSamitis] = useState<SamitiRow[]>([])
   const [loadingSamitis, setLoadingSamitis] = useState(true)
@@ -161,7 +165,7 @@ export default function SuperAdminPage() {
       .single()
 
     if (samitiErr || !newSamiti) {
-      setFormError(samitiErr?.message || 'Failed to create samiti')
+      setFormError(samitiErr?.message || t('superAdmin.createFailed'))
       setFormSubmitting(false)
       return
     }
@@ -286,17 +290,33 @@ export default function SuperAdminPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-gray-900">Super Admin</h1>
+        <h1 className="text-2xl font-bold text-gray-900">{t('superAdmin.title')}</h1>
         <div className="flex items-center gap-2">
+          {samitis.length > 0 && (
+            <ReportExportButtons
+              filename={`samitis-${new Date().toISOString().split('T')[0]}`}
+              title={t('superAdmin.registeredSamitis')}
+              headers={[t('common.name'), t('common.code'), t('common.status'), t('superAdmin.profitMethod'), t('superAdmin.profitRate'), t('superAdmin.shares'), t('common.created')]}
+              rows={samitis.map((s) => [
+                s.samiti_name,
+                s.samiti_code,
+                s.is_active ? t('common.active') : t('common.inactive'),
+                s.default_profit_method === 'flat' ? t('loans.flatRate') : t('loans.reducingBalance'),
+                `${s.default_profit_rate}%`,
+                s.shares_enabled ? t('common.enabled') : t('common.disabled'),
+                formatDate(s.created_at),
+              ])}
+            />
+          )}
           <RefreshButton onRefresh={() => { fetchSamitis(); fetchStats() }} />
           <Button onClick={() => { resetFormState(); openModal('provision') }}>
-            <Plus className="h-4 w-4 mr-1" /> New Samiti
+            <Plus className="h-4 w-4 mr-1" /> {t('superAdmin.newSamiti')}
           </Button>
         </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card title="Total Samitis" className="border-l-4 border-l-blue-500">
+        <Card title={t('superAdmin.totalSamitis')} className="border-l-4 border-l-blue-500">
           {loadingStats ? <Spinner size="sm" /> : (
             <div className="flex items-center gap-2">
               <Building2 className="h-5 w-5 text-blue-500" />
@@ -304,7 +324,7 @@ export default function SuperAdminPage() {
             </div>
           )}
         </Card>
-        <Card title="Active Samitis" className="border-l-4 border-l-green-500">
+        <Card title={t('superAdmin.activeSamitis')} className="border-l-4 border-l-green-500">
           {loadingStats ? <Spinner size="sm" /> : (
             <div className="flex items-center gap-2">
               <Building2 className="h-5 w-5 text-green-500" />
@@ -312,14 +332,14 @@ export default function SuperAdminPage() {
             </div>
           )}
         </Card>
-        <Card title="Total Loans Disbursed" className="border-l-4 border-l-yellow-500">
+        <Card title={t('superAdmin.totalLoansDisbursed')} className="border-l-4 border-l-yellow-500">
           {loadingStats ? <Spinner size="sm" /> : (
             <p className="text-2xl font-bold text-gray-900">
               {new Intl.NumberFormat('en-BD', { style: 'currency', currency: 'BDT', minimumFractionDigits: 0 }).format(stats.total_loans_disbursed)}
             </p>
           )}
         </Card>
-        <Card title="Total Savings" className="border-l-4 border-l-purple-500">
+        <Card title={t('superAdmin.totalSavings')} className="border-l-4 border-l-purple-500">
           {loadingStats ? <Spinner size="sm" /> : (
             <p className="text-2xl font-bold text-gray-900">
               {new Intl.NumberFormat('en-BD', { style: 'currency', currency: 'BDT', minimumFractionDigits: 0 }).format(stats.total_savings)}
@@ -332,7 +352,7 @@ export default function SuperAdminPage() {
         title={
           <div className="flex items-center gap-2">
             <Building2 className="h-5 w-5 text-gray-400" />
-            <span>Registered Samitis</span>
+            <span>{t('superAdmin.registeredSamitis')}</span>
           </div>
         }
       >
@@ -347,23 +367,23 @@ export default function SuperAdminPage() {
       </Card>
 
       {activeModal === 'provision' && (
-        <Modal title="Create New Samiti" size="xl">
+        <Modal title={t('superAdmin.createNewSamiti')} size="xl">
           <SamitiForm
             defaultValues={defaultSamitiValues}
             onSubmit={handleCreate}
             isSubmitting={formSubmitting}
             error={formError}
             success={formSuccess}
-            submitLabel="Create Samiti"
+            submitLabel={t('superAdmin.createSamiti')}
           />
           <div className="flex justify-end pt-2">
-            <Button variant="secondary" onClick={closeModal}>Close</Button>
+            <Button variant="secondary" onClick={closeModal}>{t('common.close')}</Button>
           </div>
         </Modal>
       )}
 
       {activeModal === 'edit-samiti' && modalData?.samiti && (
-        <Modal title={`Edit Samiti: ${modalData.samiti.samiti_name}`} size="xl">
+        <Modal title={t('superAdmin.editSamitiTitle', { name: modalData.samiti.samiti_name })} size="xl">
           <SamitiForm
             defaultValues={{
               samiti_name: modalData.samiti.samiti_name,
@@ -380,33 +400,33 @@ export default function SuperAdminPage() {
             isSubmitting={formSubmitting}
             error={formError}
             success={formSuccess}
-            submitLabel="Update Samiti"
+            submitLabel={t('superAdmin.updateSamiti')}
           />
           <div className="flex justify-end pt-2">
-            <Button variant="secondary" onClick={closeModal}>Close</Button>
+            <Button variant="secondary" onClick={closeModal}>{t('common.close')}</Button>
           </div>
         </Modal>
       )}
 
       {adminSamiti && (
-        <Modal title={`Create Admin for ${adminSamiti.samiti_name}`} size="sm">
+        <Modal title={t('superAdmin.createAdminFor', { name: adminSamiti.samiti_name })} size="sm">
           <form onSubmit={handleCreateAdmin} className="space-y-4">
             {adminError && <div className="bg-red-50 text-red-700 text-sm px-4 py-2 rounded-md">{adminError}</div>}
             {adminSuccess && <div className="bg-green-50 text-green-700 text-sm px-4 py-2 rounded-md">{adminSuccess}</div>}
             {!adminSuccess && (
               <>
-                <Input id="admin-email" label="Email" type="email" value={adminEmail} onChange={(e) => setAdminEmail(e.target.value)} placeholder="admin@yoursamiti.com" required />
-                <Input id="admin-name" label="Name" value={adminName} onChange={(e) => setAdminName(e.target.value)} placeholder="Samiti Admin" required />
-                <Input id="admin-password" label="Password" type="password" value={adminPassword} onChange={(e) => setAdminPassword(e.target.value)} placeholder="••••••••" required />
+                <Input id="admin-email" label={t('auth.email')} type="email" value={adminEmail} onChange={(e) => setAdminEmail(e.target.value)} placeholder="admin@yoursamiti.com" required />
+                <Input id="admin-name" label={t('auth.name')} value={adminName} onChange={(e) => setAdminName(e.target.value)} placeholder="Samiti Admin" required />
+                <Input id="admin-password" label={t('auth.password')} type="password" value={adminPassword} onChange={(e) => setAdminPassword(e.target.value)} placeholder="••••••••" required />
                 <div className="flex justify-end gap-2">
-                  <Button variant="secondary" type="button" onClick={() => setAdminSamiti(null)}>Cancel</Button>
-                  <Button type="submit" loading={adminSubmitting}>Create Admin</Button>
+                  <Button variant="secondary" type="button" onClick={() => setAdminSamiti(null)}>{t('common.cancel')}</Button>
+                  <Button type="submit" loading={adminSubmitting}>{t('superAdmin.createAdmin')}</Button>
                 </div>
               </>
             )}
             {adminSuccess && (
               <div className="flex justify-end">
-                <Button variant="secondary" type="button" onClick={() => setAdminSamiti(null)}>Close</Button>
+                <Button variant="secondary" type="button" onClick={() => setAdminSamiti(null)}>{t('common.close')}</Button>
               </div>
             )}
           </form>
@@ -414,49 +434,48 @@ export default function SuperAdminPage() {
       )}
 
       {deleteConfirm && (
-        <Modal title={`Delete Samiti: ${deleteConfirm.samiti_name}`} size="lg">
+        <Modal title={t('superAdmin.deleteSamitiTitle', { name: deleteConfirm.samiti_name })} size="lg">
           <div className="space-y-4">
             <div className="bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg p-4">
               <div className="flex items-start gap-3">
                 <AlertTriangle className="h-5 w-5 text-red-500 mt-0.5 shrink-0" />
                 <div>
-                  <p className="font-medium">This action cannot be undone.</p>
+                  <p className="font-medium">{t('superAdmin.cannotBeUndone')}</p>
                   <p className="mt-1">
-                    Deleting "<strong>{deleteConfirm.samiti_name}</strong>" will permanently remove the samiti and
-                    all dependent data across <strong>{deletionConstraints.length} tables</strong>.
+                    {t('superAdmin.deletingWill', {
+                      name: deleteConfirm.samiti_name,
+                      count: deletionConstraints.length,
+                    })}
                   </p>
                 </div>
               </div>
             </div>
 
             <div className="bg-amber-50 border border-amber-200 text-amber-800 text-sm rounded-lg p-4">
-              <p className="font-medium mb-2">The following data will also be deleted:</p>
+              <p className="font-medium mb-2">{t('superAdmin.alsoDeleted')}</p>
               <ul className="list-disc list-inside space-y-1">
                 {deletionConstraints.map((c) => (
-                  <li key={c.table}>{c.label}</li>
+                  <li key={c.table}>{t(c.label)}</li>
                 ))}
               </ul>
             </div>
 
             <div className="bg-blue-50 border border-blue-200 text-blue-700 text-sm rounded-lg p-4">
-              <p className="font-medium">Recommendation:</p>
-              <p className="mt-1">Instead of deleting, consider{" "}
-                <strong>deactivating</strong> the samiti using the toggle button.
-                This preserves all data and prevents new operations.
-              </p>
+              <p className="font-medium">{t('superAdmin.recommendation')}</p>
+              <p className="mt-1">{t('superAdmin.deactivateRecommend')}</p>
             </div>
 
             {deleteError && (
               <div className="bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg p-3">
-                <p className="font-medium">Foreign key constraint error</p>
+                <p className="font-medium">{t('superAdmin.fkError')}</p>
                 <p className="mt-1 text-xs">{deleteError}</p>
-                <p className="mt-1">Delete related records first or use deactivate instead.</p>
+                <p className="mt-1">{t('superAdmin.deleteRelated')}</p>
               </div>
             )}
 
             <div className="flex justify-end gap-2">
-              <Button variant="secondary" onClick={() => { setDeleteConfirm(null); setDeleteError(null) }}>Cancel</Button>
-              <Button variant="danger" onClick={handleDelete} loading={deleteSubmitting}>Delete Permanently</Button>
+              <Button variant="secondary" onClick={() => { setDeleteConfirm(null); setDeleteError(null) }}>{t('common.cancel')}</Button>
+              <Button variant="danger" onClick={handleDelete} loading={deleteSubmitting}>{t('superAdmin.deletePermanently')}</Button>
             </div>
           </div>
         </Modal>

@@ -2,12 +2,15 @@ import { useEffect, useState } from 'react'
 import { useAuth } from '../hooks/useAuth'
 import { Card } from '../components/ui/Card'
 import { Spinner } from '../components/ui/Spinner'
+import { ReportExportButtons } from '../components/reports/ReportExportButtons'
 import { supabase } from '../lib/supabase'
 import { formatCurrency } from '../lib/utils'
-import { ROLE_LABELS, type Role } from '../config/constants'
+import { useTranslation } from 'react-i18next'
+import type { Role } from '../config/constants'
 
 export default function DashboardPage() {
   const { role, user, samitiId, memberId } = useAuth()
+  const { t } = useTranslation()
   const [savingsBalance, setSavingsBalance] = useState(0)
   const [activeLoanCount, setActiveLoanCount] = useState(0)
   const [totalMembers, setTotalMembers] = useState(0)
@@ -168,25 +171,54 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
-        <p className="text-sm text-gray-500 mt-1">
-          Welcome, {user?.email} — {ROLE_LABELS[role as Role] || role}
-        </p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">{t('dashboard.title')}</h1>
+          <p className="text-sm text-gray-500 mt-1">
+            {t('dashboard.welcome', { name: user?.email })} — {t(`roles.${role as Role}`)}
+          </p>
+        </div>
+        {!loadingData && (role === 'member' || role === 'manager' || role === 'society_admin') && (
+          <ReportExportButtons
+            filename={`dashboard-summary-${new Date().toISOString().split('T')[0]}`}
+            title={t('dashboard.title')}
+            subtitle={t('dashboard.summarySubtitle')}
+            headers={[t('society.metric'), t('society.value')]}
+            rows={role === 'member'
+              ? [
+                  [t('dashboard.mySavings'), formatCurrency(savingsBalance)],
+                  [t('dashboard.myLoan'), String(activeLoanCount)],
+                  [t('dashboard.amountDue'), formatCurrency(memberDueAmount)],
+                ]
+              : [
+                  [t('accounting.cashBalance'), formatCurrency(cashInHand)],
+                  [t('dashboard.totalSavings'), formatCurrency(totalSavings)],
+                  [t('dashboard.totalLoans'), formatCurrency(loansOutstanding)],
+                  [t('loans.overdueEmis'), String(overdueEmis)],
+                  [t('dashboard.upcomingCollection'), formatCurrency(upcomingCollection)],
+                  ...(role === 'society_admin'
+                    ? [
+                        [t('dashboard.totalMembers'), String(totalMembers)],
+                        [t('dashboard.pendingApprovals'), String(pendingApprovals)],
+                      ]
+                    : []),
+                ]}
+          />
+        )}
       </div>
 
       {role === 'member' && (
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <Card title="Savings Balance" className="border-l-4 border-l-blue-500">
+          <Card title={t('dashboard.mySavings')} className="border-l-4 border-l-blue-500">
             {loadingData ? <Spinner size="sm" /> : <p className="text-2xl font-bold text-gray-900">{formatCurrency(savingsBalance)}</p>}
           </Card>
-          <Card title="Active Loans" className="border-l-4 border-l-yellow-500">
+          <Card title={t('dashboard.myLoan')} className="border-l-4 border-l-yellow-500">
             {loadingData ? <Spinner size="sm" /> : <p className="text-2xl font-bold text-gray-900">{activeLoanCount}</p>}
           </Card>
-          <Card title="Overdue Amount" className="border-l-4 border-l-red-500">
+          <Card title={t('dashboard.amountDue')} className="border-l-4 border-l-red-500">
             {loadingData ? <Spinner size="sm" /> : <p className="text-2xl font-bold text-gray-900">{formatCurrency(memberDueAmount)}</p>}
           </Card>
-          <Card title="Share Capital" className="border-l-4 border-l-green-500">
+          <Card title={t('dashboard.myShares')} className="border-l-4 border-l-green-500">
             <p className="text-2xl font-bold text-gray-900">{formatCurrency(0)}</p>
           </Card>
         </div>
@@ -194,19 +226,19 @@ export default function DashboardPage() {
 
       {(role === 'manager' || role === 'society_admin') && (
         <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-          <Card title="Cash in Hand/Bank" className="border-l-4 border-l-emerald-500">
+          <Card title={t('accounting.cashBalance')} className="border-l-4 border-l-emerald-500">
             {loadingData ? <Spinner size="sm" /> : <p className="text-2xl font-bold text-gray-900">{formatCurrency(cashInHand)}</p>}
           </Card>
-          <Card title="Total Savings" className="border-l-4 border-l-green-500">
+          <Card title={t('dashboard.totalSavings')} className="border-l-4 border-l-green-500">
             {loadingData ? <Spinner size="sm" /> : <p className="text-2xl font-bold text-gray-900">{formatCurrency(totalSavings)}</p>}
           </Card>
-          <Card title="Loans Outstanding" className="border-l-4 border-l-blue-500">
+          <Card title={t('dashboard.totalLoans')} className="border-l-4 border-l-blue-500">
             {loadingData ? <Spinner size="sm" /> : <p className="text-2xl font-bold text-gray-900">{formatCurrency(loansOutstanding)}</p>}
           </Card>
-          <Card title="Overdue EMIs" className="border-l-4 border-l-yellow-500">
+          <Card title={t('dashboard.activeLoans')} className="border-l-4 border-l-yellow-500">
             {loadingData ? <Spinner size="sm" /> : <p className="text-2xl font-bold text-gray-900">{overdueEmis}</p>}
           </Card>
-          <Card title="Upcoming Collection" className="border-l-4 border-l-purple-500">
+          <Card title={t('loans.overdueEmis')} className="border-l-4 border-l-purple-500">
             {loadingData ? <Spinner size="sm" /> : <p className="text-2xl font-bold text-gray-900">{formatCurrency(upcomingCollection)}</p>}
           </Card>
         </div>
@@ -214,18 +246,18 @@ export default function DashboardPage() {
 
       {role === 'society_admin' && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <Card title="Total Members" className="border-l-4 border-l-blue-500">
+          <Card title={t('dashboard.totalMembers')} className="border-l-4 border-l-blue-500">
             {loadingData ? <Spinner size="sm" /> : <p className="text-2xl font-bold text-gray-900">{totalMembers}</p>}
           </Card>
-          <Card title="Pending Approvals" className="border-l-4 border-l-purple-500">
+          <Card title={t('dashboard.pendingApprovals')} className="border-l-4 border-l-purple-500">
             {loadingData ? <Spinner size="sm" /> : <p className="text-2xl font-bold text-gray-900">{pendingApprovals}</p>}
           </Card>
         </div>
       )}
 
       {role === 'super_admin' && (
-        <Card title="System Overview">
-          <p className="text-gray-500">Super Admin dashboard — system-wide stats coming soon.</p>
+        <Card title={t('dashboard.title')}>
+          <p className="text-gray-500">{t('dashboard.pendingApprovals')}</p>
         </Card>
       )}
     </div>

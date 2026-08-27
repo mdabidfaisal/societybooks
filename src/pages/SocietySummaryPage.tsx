@@ -5,11 +5,14 @@ import { Card } from '../components/ui/Card'
 import { Spinner } from '../components/ui/Spinner'
 import { EmptyState } from '../components/ui/EmptyState'
 import { RefreshButton } from '../components/ui/RefreshButton'
+import { ReportExportButtons } from '../components/reports/ReportExportButtons'
 import { formatCurrency } from '../lib/utils'
+import { useTranslation } from 'react-i18next'
 import { Users, Wallet, HandshakeIcon, DollarSign, ArrowLeftRight, Landmark, Gift } from 'lucide-react'
 
 export default function SocietySummaryPage() {
   const { samitiId } = useAuth()
+  const { t } = useTranslation()
   const [loading, setLoading] = useState(true)
   const [data, setData] = useState<{
     totalMembers: number; activeMembers: number; totalSavings: number
@@ -86,58 +89,76 @@ export default function SocietySummaryPage() {
 
   if (loading) return <Spinner size="lg" />
 
-  if (!data) return <EmptyState title="No data" description="Could not load society summary." />
+  if (!data) return <EmptyState title={t('society.noData')} description={t('society.loadError')} />
 
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-gray-900">Society Summary</h1>
-        <RefreshButton onRefresh={loadSummary} />
+        <h1 className="text-2xl font-bold text-gray-900">{t('society.title')}</h1>
+        <div className="flex items-center gap-2">
+          <ReportExportButtons
+            filename="society-summary"
+            title={t('society.title')}
+            headers={[t('society.metric'), t('society.value')]}
+            rows={[
+              [t('society.totalMembers'), String(data.totalMembers)],
+              [t('society.activeMembers'), String(data.activeMembers)],
+              [t('society.totalSavings'), formatCurrency(data.totalSavings)],
+              [t('society.loansOutstanding'), formatCurrency(data.loansOutstanding)],
+              [t('society.activeLoans'), String(data.activeLoans)],
+              [t('society.closedLoans'), String(data.closedLoans)],
+              [t('society.cashInHand'), formatCurrency(data.cashInHand)],
+              [t('society.profitDistributed'), formatCurrency(data.totalProfitDistributed)],
+              [t('society.netPosition'), formatCurrency(data.cashInHand + data.loansOutstanding - data.totalSavings)],
+            ]}
+          />
+          <RefreshButton onRefresh={loadSummary} />
+        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card title="Total Members" className="border-l-4 border-l-blue-500">
+        <Card title={t('society.totalMembers')} className="border-l-4 border-l-blue-500">
           <div className="flex items-center gap-3">
             <Users className="h-8 w-8 text-blue-500" />
             <div>
               <p className="text-2xl font-bold text-gray-900">{data.totalMembers}</p>
-              <p className="text-xs text-gray-500">{data.activeMembers} active</p>
+              <p className="text-xs text-gray-500">{t('society.activeSub', { count: data.activeMembers })}</p>
             </div>
           </div>
         </Card>
-        <Card title="Total Savings" className="border-l-4 border-l-green-500">
+        <Card title={t('society.totalSavings')} className="border-l-4 border-l-green-500">
           <div className="flex items-center gap-3">
             <Wallet className="h-8 w-8 text-green-500" />
             <p className="text-2xl font-bold text-gray-900">{formatCurrency(data.totalSavings)}</p>
           </div>
         </Card>
-        <Card title="Loans Outstanding" className="border-l-4 border-l-yellow-500">
+        <Card title={t('society.loansOutstanding')} className="border-l-4 border-l-yellow-500">
           <div className="flex items-center gap-3">
             <HandshakeIcon className="h-8 w-8 text-yellow-500" />
             <div>
               <p className="text-2xl font-bold text-gray-900">{formatCurrency(data.loansOutstanding)}</p>
-              <p className="text-xs text-gray-500">{data.activeLoans} active, {data.closedLoans} closed</p>
+              <p className="text-xs text-gray-500">{t('society.loansSub', { active: data.activeLoans, closed: data.closedLoans })}</p>
             </div>
           </div>
         </Card>
-        <Card title="Cash in Hand / Bank" className="border-l-4 border-l-emerald-500">
+        <Card title={t('society.cashInHand')} className="border-l-4 border-l-emerald-500">
           <div className="flex items-center gap-3">
             <DollarSign className="h-8 w-8 text-emerald-500" />
             <p className="text-2xl font-bold text-gray-900">{formatCurrency(data.cashInHand)}</p>
           </div>
         </Card>
-        <Card title="Profit Distributed" className="border-l-4 border-l-purple-500">
+        <Card title={t('society.profitDistributed')} className="border-l-4 border-l-purple-500">
           <div className="flex items-center gap-3">
             <Gift className="h-8 w-8 text-purple-500" />
             <p className="text-2xl font-bold text-gray-900">{formatCurrency(data.totalProfitDistributed)}</p>
           </div>
         </Card>
-        <Card title="Net Position" className="border-l-4 border-l-indigo-500">
+        <Card title={t('society.netPosition')} className="border-l-4 border-l-indigo-500">
           <div className="flex items-center gap-3">
             <Landmark className="h-8 w-8 text-indigo-500" />
             <p className="text-2xl font-bold text-gray-900">{formatCurrency(data.cashInHand + data.loansOutstanding - data.totalSavings)}</p>
           </div>
-          <p className="text-xs text-gray-500 mt-1">Assets − Liabilities</p>
+          <p className="text-xs text-gray-500 mt-1">{t('society.assetsLiabilities')}</p>
         </Card>
       </div>
     </div>

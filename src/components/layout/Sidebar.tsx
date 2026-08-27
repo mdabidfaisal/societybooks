@@ -4,6 +4,7 @@ import { useAuth } from '../../hooks/useAuth'
 import { navigation } from '../../config/navigation'
 import { X, LogOut, User } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
+import { useTranslation } from 'react-i18next'
 import type { Role } from '../../config/constants'
 
 interface SidebarProps {
@@ -13,6 +14,7 @@ interface SidebarProps {
 
 export function Sidebar({ open, onClose }: SidebarProps) {
   const { role, user } = useAuth()
+  const { t } = useTranslation()
 
   const visibleNav = navigation.filter(
     (item) => role && item.roles.includes(role as Role)
@@ -57,7 +59,7 @@ export function Sidebar({ open, onClose }: SidebarProps) {
               }
             >
               <item.icon className="h-5 w-5 shrink-0" />
-              <span>{item.label}</span>
+              <span>{t(item.label)}</span>
             </NavLink>
           ))}
         </nav>
@@ -69,7 +71,7 @@ export function Sidebar({ open, onClose }: SidebarProps) {
             </div>
             <div className="min-w-0 flex-1">
               <p className="text-sm font-medium text-gray-900 truncate">{user?.email}</p>
-              <p className="text-xs text-gray-500 capitalize">{role?.replace('_', ' ')}</p>
+              <p className="text-xs text-gray-500 capitalize">{role ? t(`roles.${role}`) : ''}</p>
             </div>
           </div>
           <button
@@ -77,7 +79,7 @@ export function Sidebar({ open, onClose }: SidebarProps) {
             className="flex items-center gap-3 w-full px-3 py-2.5 rounded-lg text-sm font-medium text-gray-600 hover:bg-red-50 hover:text-red-600 transition-colors cursor-pointer"
           >
             <LogOut className="h-5 w-5 shrink-0" />
-            <span>Sign Out</span>
+            <span>{t('auth.logout')}</span>
           </button>
         </div>
       </aside>

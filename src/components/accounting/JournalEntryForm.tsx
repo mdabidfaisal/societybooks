@@ -6,6 +6,7 @@ import { supabase } from '../../lib/supabase'
 import { postJournalEntry } from '../../lib/accounting'
 import { useAuth } from '../../hooks/useAuth'
 import { useUIStore } from '../../store/uiStore'
+import { useTranslation } from 'react-i18next'
 import type { ChartOfAccountData } from '../../hooks/useAccounting'
 import { Plus, Trash2, AlertTriangle, Sparkles } from 'lucide-react'
 
@@ -20,16 +21,6 @@ interface Line {
   credit: number
   description: string
 }
-
-const ENTRY_TYPES = [
-  { value: 'expense', label: 'Expense' },
-  { value: 'income', label: 'Income' },
-  { value: 'deposit', label: 'Savings Deposit' },
-  { value: 'withdrawal', label: 'Savings Withdrawal' },
-  { value: 'loan_disbursement', label: 'Loan Disbursement' },
-  { value: 'loan_repayment', label: 'Loan Repayment' },
-  { value: 'correction', label: 'Correction (advanced)' },
-]
 
 // Maps entry type → what account type the user picks as "primary"
 const PRIMARY_FILTER: Record<string, string[]> = {
@@ -54,6 +45,17 @@ const ENTRY_SIDES: Record<string, { primary: 'debit' | 'credit'; contra: 'debit'
 export function JournalEntryForm({ accounts, onSuccess }: JournalEntryFormProps) {
   const { samitiId } = useAuth()
   const closeModal = useUIStore((s) => s.closeModal)
+  const { t } = useTranslation()
+
+  const ENTRY_TYPES = [
+    { value: 'expense', label: t('accounting.expense') },
+    { value: 'income', label: t('accounting.income') },
+    { value: 'deposit', label: t('accounting.savingsDeposit') },
+    { value: 'withdrawal', label: t('accounting.savingsWithdrawal') },
+    { value: 'loan_disbursement', label: t('txnType.loan_disbursement') },
+    { value: 'loan_repayment', label: t('txnType.loan_repayment') },
+    { value: 'correction', label: t('accounting.correctionAdvanced') },
+  ]
 
   // Mode
   const [advanced, setAdvanced] = useState(false)
@@ -89,9 +91,9 @@ export function JournalEntryForm({ accounts, onSuccess }: JournalEntryFormProps)
   const balanced = Math.abs(totalDebit - totalCredit) < 0.01
 
   const lineErrors = lines.map((line) => {
-    if (!line.account_code) return { message: 'Select an account', show: line.account_code !== '' || totalDebit > 0 || totalCredit > 0 }
-    if (line.debit > 0 && line.credit > 0) return { message: 'Can only have Debit OR Credit', show: true }
-    if (line.debit === 0 && line.credit === 0) return { message: 'Enter Debit or Credit amount', show: true }
+    if (!line.account_code) return { message: t('accounting.selectAccount'), show: line.account_code !== '' || totalDebit > 0 || totalCredit > 0 }
+    if (line.debit > 0 && line.credit > 0) return { message: t('accounting.debitOrCreditOnly'), show: true }
+    if (line.debit === 0 && line.credit === 0) return { message: t('accounting.enterDebitOrCredit'), show: true }
     return null
   })
   const hasLineErrors = lineErrors.some((e) => e?.show)
@@ -114,14 +116,14 @@ export function JournalEntryForm({ accounts, onSuccess }: JournalEntryFormProps)
 
     if (advanced) {
       // ——— Advanced mode ———
-      if (!description) { setError('Description is required'); return }
-      if (!balanced) { setError('Debits and credits must balance'); return }
-      if (hasLineErrors) { setError('Fix the journal line errors before submitting.'); return }
+      if (!description) { setError(t('accounting.descriptionRequired')); return }
+      if (!balanced) { setError(t('accounting.balanceRequired')); return }
+      if (hasLineErrors) { setError(t('accounting.fixLineErrors')); return }
 
       const validLines = lines.filter(
         (l) => l.account_code && ((l.debit > 0 && l.credit === 0) || (l.credit > 0 && l.debit === 0))
       )
-      if (validLines.length === 0) { setError('At least one valid journal line is required.'); return }
+      if (validLines.length === 0) { setError(t('accounting.validLineRequired')); return }
 
       setLoading(true)
       const { data: { user } } = await supabase.auth.getUser()
@@ -137,23 +139,23 @@ export function JournalEntryForm({ accounts, onSuccess }: JournalEntryFormProps)
         onSuccess?.()
         closeModal()
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to post entry')
+        setError(err instanceof Error ? err.message : t('accounting.postEntryFailed'))
       }
       setLoading(false)
       return
     }
 
     // ——— Simple mode ———
-    if (!description) { setError('Description is required'); return }
-    if (!primaryAccount) { setError('Select the primary account'); return }
-    if (!contraAccount) { setError('Select the contra account'); return }
-    if (amount <= 0) { setError('Amount must be positive'); return }
+    if (!description) { setError(t('accounting.descriptionRequired')); return }
+    if (!primaryAccount) { setError(t('accounting.selectPrimary')); return }
+    if (!contraAccount) { setError(t('accounting.selectContra')); return }
+    if (amount <= 0) { setError(t('loans.amountPositive')); return }
 
     setLoading(true)
     const { data: { user } } = await supabase.auth.getUser()
 
     const sides = ENTRY_SIDES[entryType]
-    if (!sides) { setError('Unsupported entry type'); setLoading(false); return }
+    if (!sides) { setError(t('accounting.unsupportedEntryType')); setLoading(false); return }
 
     // Debit side: if primary is debit → use primaryAccount, else use contraAccount
     const debitAccount = sides.primary === 'debit' ? primaryAccount : contraAccount
@@ -177,7 +179,7 @@ export function JournalEntryForm({ accounts, onSuccess }: JournalEntryFormProps)
       onSuccess?.()
       closeModal()
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to post entry')
+      setError(err instanceof Error ? err.message : t('accounting.postEntryFailed'))
     }
     setLoading(false)
   }
@@ -189,10 +191,16 @@ export function JournalEntryForm({ accounts, onSuccess }: JournalEntryFormProps)
   const sides = ENTRY_SIDES[entryType]
   const previewLines = (simpleCanSubmit && sides && selectedPrimary && selectedContra)
     ? [
-        { account: sides.primary === 'debit' ? selectedPrimary.account_name : selectedContra.account_name, side: 'Debit', amount },
-        { account: sides.primary === 'credit' ? selectedPrimary.account_name : selectedContra.account_name, side: 'Credit', amount },
+        { account: sides.primary === 'debit' ? selectedPrimary.account_name : selectedContra.account_name, side: t('accounting.debit'), amount },
+        { account: sides.primary === 'credit' ? selectedPrimary.account_name : selectedContra.account_name, side: t('accounting.credit'), amount },
       ]
     : []
+
+  const primaryAccountLabel = entryType === 'expense' ? t('accounting.expenseAccount')
+    : entryType === 'income' ? t('accounting.incomeAccount')
+    : entryType === 'deposit' || entryType === 'withdrawal' ? t('accounting.memberSavingsAccount')
+    : entryType === 'loan_disbursement' || entryType === 'loan_repayment' ? t('accounting.loanAccount')
+    : t('accounting.account')
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
@@ -204,19 +212,19 @@ export function JournalEntryForm({ accounts, onSuccess }: JournalEntryFormProps)
           className={`text-xs flex items-center gap-1 px-2 py-1 rounded transition-colors cursor-pointer ${advanced ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
         >
           <Sparkles className="h-3 w-3" />
-          {advanced ? 'Switch to Simple' : 'Advanced Mode'}
+          {advanced ? t('accounting.switchToSimple') : t('accounting.advancedMode')}
         </button>
       </div>
 
       {advanced ? (
         /* ───── ADVANCED MODE ───── */
         <>
-          <Input id="desc-adv" label="Description" value={description} onChange={(e) => setDescription(e.target.value)} placeholder="e.g. Office rent payment" />
+          <Input id="desc-adv" label={t('accounting.description')} value={description} onChange={(e) => setDescription(e.target.value)} placeholder="e.g. Office rent payment" />
 
           <div className="space-y-2">
             <div className="flex items-center justify-between">
-              <span className="text-sm font-medium text-gray-700">Journal Lines</span>
-              <Button type="button" size="sm" variant="ghost" onClick={addLine}><Plus className="h-4 w-4 mr-1" />Add Line</Button>
+              <span className="text-sm font-medium text-gray-700">{t('accounting.journalLines')}</span>
+              <Button type="button" size="sm" variant="ghost" onClick={addLine}><Plus className="h-4 w-4 mr-1" />{t('accounting.addLine')}</Button>
             </div>
 
             {lines.map((line, i) => {
@@ -227,13 +235,13 @@ export function JournalEntryForm({ accounts, onSuccess }: JournalEntryFormProps)
                     <div className="flex-1">
                       <Select
                         options={accounts.filter((a) => a.is_active).map((a) => ({ value: a.account_code, label: `[${a.account_code}] ${a.account_name}` }))}
-                        placeholder="Select account"
+                        placeholder={t('accounting.selectAccountPlaceholder')}
                         value={line.account_code}
                         onChange={(e) => updateLine(i, 'account_code', e.target.value)}
                       />
                     </div>
-                    <Input type="number" step="0.01" placeholder="Debit" value={line.debit || ''} onChange={(e) => updateLine(i, 'debit', Number(e.target.value))} className="w-24" />
-                    <Input type="number" step="0.01" placeholder="Credit" value={line.credit || ''} onChange={(e) => updateLine(i, 'credit', Number(e.target.value))} className="w-24" />
+                    <Input type="number" step="0.01" placeholder={t('accounting.debit')} value={line.debit || ''} onChange={(e) => updateLine(i, 'debit', Number(e.target.value))} className="w-24" />
+                    <Input type="number" step="0.01" placeholder={t('accounting.credit')} value={line.credit || ''} onChange={(e) => updateLine(i, 'credit', Number(e.target.value))} className="w-24" />
                     <button type="button" onClick={() => removeLine(i)} className="p-2 text-red-400 hover:text-red-600 cursor-pointer shrink-0"><Trash2 className="h-4 w-4" /></button>
                   </div>
                   {le?.show && <p className="text-xs text-red-600 mt-1 flex items-center gap-1"><AlertTriangle className="h-3 w-3" /> {le.message}</p>}
@@ -244,7 +252,7 @@ export function JournalEntryForm({ accounts, onSuccess }: JournalEntryFormProps)
 
           <div className="flex justify-between text-sm font-medium bg-gray-50 p-3 rounded">
             <span className={balanced ? 'text-green-600' : 'text-red-600'}>
-              Debit: {totalDebit.toFixed(2)} | Credit: {totalCredit.toFixed(2)} {balanced ? '✓ Balanced' : '✗ Unbalanced'}
+              {t('accounting.debit')}: {totalDebit.toFixed(2)} | {t('accounting.credit')}: {totalCredit.toFixed(2)} {balanced ? t('accounting.balanced') : t('accounting.unbalancedLabel')}
             </span>
           </div>
         </>
@@ -254,28 +262,28 @@ export function JournalEntryForm({ accounts, onSuccess }: JournalEntryFormProps)
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <Select
               id="entry-type"
-              label="Entry Type"
+              label={t('accounting.entryType')}
               options={ENTRY_TYPES}
               value={entryType}
               onChange={(e) => { setEntryType(e.target.value); setPrimaryAccount('') }}
             />
-            <Input id="entry-date" label="Entry Date" type="date" value={entryDate} onChange={(e) => setEntryDate(e.target.value)} />
+            <Input id="entry-date" label={t('accounting.entryDate')} type="date" value={entryDate} onChange={(e) => setEntryDate(e.target.value)} />
           </div>
 
-          <Input id="desc" label="Description" value={description} onChange={(e) => setDescription(e.target.value)} placeholder="e.g. Office snacks purchase" />
+          <Input id="desc" label={t('accounting.description')} value={description} onChange={(e) => setDescription(e.target.value)} placeholder="e.g. Office snacks purchase" />
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <Select
               id="primary-account"
-              label={entryType === 'expense' ? 'Expense Account' : entryType === 'income' ? 'Income Account' : entryType === 'deposit' || entryType === 'withdrawal' ? 'Member Savings Account' : entryType === 'loan_disbursement' || entryType === 'loan_repayment' ? 'Loan Account' : 'Account'}
-              placeholder="Select account..."
+              label={primaryAccountLabel}
+              placeholder={t('accounting.selectAccountEllipsis')}
               options={primaryAccounts.map((a) => ({ value: a.account_code, label: `[${a.account_code}] ${a.account_name}` }))}
               value={primaryAccount}
               onChange={(e) => setPrimaryAccount(e.target.value)}
             />
             <Input
               id="amount"
-              label="Amount (৳)"
+              label={t('accounting.amountUnit')}
               type="number"
               step="0.01"
               min="0.01"
@@ -286,8 +294,8 @@ export function JournalEntryForm({ accounts, onSuccess }: JournalEntryFormProps)
 
           <Select
             id="contra-account"
-            label="Paid via / Received in"
-            placeholder="Select payment account..."
+            label={t('accounting.paidViaReceivedIn')}
+            placeholder={t('accounting.selectPaymentAccount')}
             options={contraCandidates.map((a) => ({ value: a.account_code, label: `[${a.account_code}] ${a.account_name}` }))}
             value={contraAccount}
             onChange={(e) => setContraAccount(e.target.value)}
@@ -296,7 +304,7 @@ export function JournalEntryForm({ accounts, onSuccess }: JournalEntryFormProps)
           {/* Preview */}
           {previewLines.length > 0 && (
             <div className="bg-green-50 border border-green-200 rounded-lg p-3 text-sm space-y-1">
-              <p className="text-xs font-medium text-green-700 uppercase tracking-wider">Auto-entry preview</p>
+              <p className="text-xs font-medium text-green-700 uppercase tracking-wider">{t('accounting.autoEntryPreview')}</p>
               {previewLines.map((pl, i) => (
                 <div key={i} className="flex justify-between text-green-800">
                   <span>{pl.side} → {pl.account}</span>
@@ -311,8 +319,8 @@ export function JournalEntryForm({ accounts, onSuccess }: JournalEntryFormProps)
       {error && <div className="bg-red-50 text-red-700 text-sm px-4 py-2 rounded flex items-center gap-2"><AlertTriangle className="h-4 w-4 shrink-0" />{error}</div>}
 
       <div className="flex justify-end gap-2 pt-2">
-        <Button type="button" variant="secondary" onClick={closeModal}>Cancel</Button>
-        <Button type="submit" loading={loading} disabled={advanced ? (!balanced || hasLineErrors) : !simpleCanSubmit}>Post Entry</Button>
+        <Button type="button" variant="secondary" onClick={closeModal}>{t('common.cancel')}</Button>
+        <Button type="submit" loading={loading} disabled={advanced ? (!balanced || hasLineErrors) : !simpleCanSubmit}>{t('accounting.postEntry')}</Button>
       </div>
     </form>
   )

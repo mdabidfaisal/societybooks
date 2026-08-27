@@ -4,13 +4,16 @@ import { Button } from '../components/ui/Button'
 import { Input } from '../components/ui/Input'
 import { Spinner } from '../components/ui/Spinner'
 import { RefreshButton } from '../components/ui/RefreshButton'
-import { getProfitAndLoss } from '../lib/accounting'
+import { ReportExportButtons } from '../components/reports/ReportExportButtons'
+import { getProfitAndLoss, type IncomeExpenseLine } from '../lib/accounting'
 import { useAuth } from '../hooks/useAuth'
 import { formatCurrency } from '../lib/utils'
+import { useTranslation } from 'react-i18next'
 import { TrendingUp, TrendingDown, DollarSign, AlertCircle } from 'lucide-react'
 
 export default function ProfitLossPage() {
   const { samitiId } = useAuth()
+  const { t } = useTranslation()
   const currentYear = new Date().getFullYear()
   const [fromDate, setFromDate] = useState(`${currentYear}-01-01`)
   const [toDate, setToDate] = useState(`${currentYear}-12-31`)
@@ -19,6 +22,8 @@ export default function ProfitLossPage() {
     totalExpenses: number
     netProfit: number
   } | null>(null)
+  const [incomeLines, setIncomeLines] = useState<IncomeExpenseLine[]>([])
+  const [expenseLines, setExpenseLines] = useState<IncomeExpenseLine[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
@@ -33,9 +38,11 @@ export default function ProfitLossPage() {
         totalExpenses: result.totalExpenses,
         netProfit: result.netProfit,
       })
+      setIncomeLines(result.income)
+      setExpenseLines(result.expenses)
     } catch (err) {
       console.error(err)
-      setError(err instanceof Error ? err.message : 'Failed to load report')
+      setError(err instanceof Error ? err.message : t('reports.loadFailed'))
     }
     setLoading(false)
   }, [samitiId, fromDate, toDate])
@@ -45,15 +52,32 @@ export default function ProfitLossPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-gray-900">Profit & Loss Statement</h1>
-        <RefreshButton onRefresh={loadReport} />
+        <h1 className="text-2xl font-bold text-gray-900">{t('accounting.profitLossStatement')}</h1>
+        <div className="flex items-center gap-2">
+          <ReportExportButtons
+            filename={`profit-loss-${fromDate}-${toDate}`}
+            title={t('accounting.profitLossStatement')}
+            subtitle={t('accounting.reportPeriodRange', { from: fromDate, to: toDate })}
+            headers={[t('accounting.item'), t('common.amount')]}
+            rows={[
+              ...incomeLines.map((i) => [`${t('accounting.income')} - ${i.name}`, formatCurrency(i.amount)]),
+              ...expenseLines.map((e) => [`${t('accounting.expense')} - ${e.name}`, formatCurrency(e.amount)]),
+            ]}
+            totals={[
+              { label: t('accounting.totalIncome'), value: formatCurrency(report?.totalIncome || 0) },
+              { label: t('accounting.totalExpense'), value: formatCurrency(report?.totalExpenses || 0) },
+              { label: t('accounting.netProfitLoss'), value: formatCurrency(report?.netProfit || 0) },
+            ]}
+          />
+          <RefreshButton onRefresh={loadReport} />
+        </div>
       </div>
 
       <Card>
         <div className="flex items-end gap-3 flex-wrap">
           <Input
             id="from"
-            label="From Date"
+            label={t('reports.fromDate')}
             type="date"
             value={fromDate}
             onChange={(e) => setFromDate(e.target.value)}
@@ -61,13 +85,13 @@ export default function ProfitLossPage() {
           />
           <Input
             id="to"
-            label="To Date"
+            label={t('reports.toDate')}
             type="date"
             value={toDate}
             onChange={(e) => setToDate(e.target.value)}
             className="w-44"
           />
-          <Button onClick={loadReport} loading={loading}>Run Report</Button>
+          <Button onClick={loadReport} loading={loading}>{t('accounting.runReport')}</Button>
         </div>
       </Card>
 
@@ -86,7 +110,7 @@ export default function ProfitLossPage() {
             <div className="flex items-center gap-3">
               <TrendingUp className="h-8 w-8 text-green-500" />
               <div>
-                <p className="text-sm text-gray-500">Total Income</p>
+                <p className="text-sm text-gray-500">{t('accounting.totalIncome')}</p>
                 <p className="text-2xl font-bold text-green-600">{formatCurrency(report.totalIncome)}</p>
               </div>
             </div>
@@ -95,14 +119,14 @@ export default function ProfitLossPage() {
             <div className="flex items-center gap-3">
               <TrendingDown className="h-8 w-8 text-red-500" />
               <div>
-                <p className="text-sm text-gray-500">Total Expenses</p>
+                <p className="text-sm text-gray-500">{t('accounting.totalExpense')}</p>
                 <p className="text-2xl font-bold text-red-600">{formatCurrency(report.totalExpenses)}</p>
               </div>
             </div>
           </Card>
           <Card className={`border-l-4 ${report.netProfit >= 0 ? 'border-l-blue-500' : 'border-l-red-500'}`}>
             <div className="text-center">
-              <p className="text-sm text-gray-500">Net Profit / Loss</p>
+              <p className="text-sm text-gray-500">{t('accounting.netProfitLoss')}</p>
               <p className={`text-3xl font-bold ${report.netProfit >= 0 ? 'text-blue-600' : 'text-red-600'}`}>
                 {formatCurrency(report.netProfit)}
               </p>

@@ -4,20 +4,19 @@ import { z } from 'zod'
 import { Button } from '../ui/Button'
 import { Input } from '../ui/Input'
 import { Switch } from '../ui/Switch'
+import { useTranslation } from 'react-i18next'
 
-export const samitiSchema = z.object({
-  samiti_name: z.string().min(1, 'Name is required'),
-  samiti_code: z.string().min(1, 'Code is required'),
-  is_active: z.boolean(),
-  shares_enabled: z.boolean(),
-  share_value: z.coerce.number().min(0, 'Must be 0 or more'),
-  default_profit_method: z.enum(['flat', 'reducing_balance'] as const),
-  default_profit_rate: z.coerce.number().min(0, 'Must be 0 or more').max(100, 'Must be ≤ 100'),
-  address: z.string().optional(),
-  phone: z.string().optional(),
-})
-
-export type SamitiFormData = z.infer<typeof samitiSchema>
+export type SamitiFormData = {
+  samiti_name: string
+  samiti_code: string
+  is_active: boolean
+  shares_enabled: boolean
+  share_value: number
+  default_profit_method: 'flat' | 'reducing_balance'
+  default_profit_rate: number
+  address?: string
+  phone?: string
+}
 
 export const defaultSamitiValues: SamitiFormData = {
   samiti_name: '',
@@ -40,7 +39,21 @@ interface SamitiFormProps {
   submitLabel?: string
 }
 
-export function SamitiForm({ defaultValues, onSubmit, isSubmitting, error, success, submitLabel = 'Save' }: SamitiFormProps) {
+export function SamitiForm({ defaultValues, onSubmit, isSubmitting, error, success, submitLabel }: SamitiFormProps) {
+  const { t } = useTranslation()
+
+  const samitiSchema = z.object({
+    samiti_name: z.string().min(1, t('superAdmin.nameRequired')),
+    samiti_code: z.string().min(1, t('superAdmin.codeRequired')),
+    is_active: z.boolean(),
+    shares_enabled: z.boolean(),
+    share_value: z.coerce.number().min(0, t('superAdmin.valueZeroOrMore')),
+    default_profit_method: z.enum(['flat', 'reducing_balance'] as const),
+    default_profit_rate: z.coerce.number().min(0, t('superAdmin.valueZeroOrMore')).max(100, t('superAdmin.max100')),
+    address: z.string().optional(),
+    phone: z.string().optional(),
+  })
+
   const { register, handleSubmit, watch, setValue, formState: { errors } } = useForm<SamitiFormData>({
     resolver: zodResolver(samitiSchema),
     defaultValues: defaultValues ?? defaultSamitiValues,
@@ -58,47 +71,47 @@ export function SamitiForm({ defaultValues, onSubmit, isSubmitting, error, succe
       )}
 
       <div className="space-y-3">
-        <h3 className="text-sm font-semibold text-gray-700">Samiti Details</h3>
-        <Input id="samiti_name" label="Samiti Name" {...register('samiti_name')} error={errors.samiti_name?.message} />
-        <Input id="samiti_code" label="Samiti Code (unique identifier)" {...register('samiti_code')} error={errors.samiti_code?.message} />
-        <Input id="address" label="Address" {...register('address')} />
-        <Input id="phone" label="Phone" {...register('phone')} />
+        <h3 className="text-sm font-semibold text-gray-700">{t('superAdmin.samitiDetails')}</h3>
+        <Input id="samiti_name" label={t('superAdmin.samitiName')} {...register('samiti_name')} error={errors.samiti_name?.message} />
+        <Input id="samiti_code" label={t('superAdmin.samitiCode')} {...register('samiti_code')} error={errors.samiti_code?.message} />
+        <Input id="address" label={t('common.address')} {...register('address')} />
+        <Input id="phone" label={t('common.phone')} {...register('phone')} />
       </div>
 
       <div className="space-y-3">
-        <h3 className="text-sm font-semibold text-gray-700">Status & Financial Configuration</h3>
+        <h3 className="text-sm font-semibold text-gray-700">{t('superAdmin.statusFinancialConfig')}</h3>
         <div className="flex items-center justify-between py-2">
           <div>
-            <label className="font-medium text-sm text-gray-700">Active</label>
-            <p className="text-xs text-gray-500">When inactive, the samiti services are suspended</p>
+            <label className="font-medium text-sm text-gray-700">{t('common.active')}</label>
+            <p className="text-xs text-gray-500">{t('superAdmin.whenInactive')}</p>
           </div>
           <Switch checked={watch('is_active')} onChange={(v) => setValue('is_active', v)} />
         </div>
         <div className="flex items-center justify-between py-2">
           <div>
-            <label className="font-medium text-sm text-gray-700">Enable Shares</label>
-            <p className="text-xs text-gray-500">Allow members to purchase share capital</p>
+            <label className="font-medium text-sm text-gray-700">{t('superAdmin.enableShares')}</label>
+            <p className="text-xs text-gray-500">{t('superAdmin.shareCapital')}</p>
           </div>
           <Switch checked={sharesEnabled} onChange={(v) => setValue('shares_enabled', v)} />
         </div>
         {sharesEnabled && (
-          <Input id="share_value" label="Share Value (৳)" type="number" step="0.01" {...register('share_value')} error={errors.share_value?.message} />
+          <Input id="share_value" label={t('superAdmin.shareValueLabel')} type="number" step="0.01" {...register('share_value')} error={errors.share_value?.message} />
         )}
         <div>
-          <label className="font-medium text-sm text-gray-700">Default Profit Method</label>
+          <label className="font-medium text-sm text-gray-700">{t('superAdmin.defaultProfitMethod')}</label>
           <select
             {...register('default_profit_method')}
             className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-xs focus:border-blue-500 focus:outline-hidden focus:ring-1 focus:ring-blue-500"
           >
-            <option value="reducing_balance">Reducing Balance</option>
-            <option value="flat">Flat Rate</option>
+            <option value="reducing_balance">{t('loans.reducingBalance')}</option>
+            <option value="flat">{t('loans.flatRate')}</option>
           </select>
         </div>
-        <Input id="default_profit_rate" label="Default Profit Rate (%)" type="number" step="0.01" {...register('default_profit_rate')} error={errors.default_profit_rate?.message} />
+        <Input id="default_profit_rate" label={t('superAdmin.defaultProfitRate')} type="number" step="0.01" {...register('default_profit_rate')} error={errors.default_profit_rate?.message} />
       </div>
 
       <div className="flex justify-end gap-2 pt-2">
-        <Button type="submit" loading={isSubmitting}>{submitLabel}</Button>
+        <Button type="submit" loading={isSubmitting}>{submitLabel || t('common.save')}</Button>
       </div>
     </form>
   )

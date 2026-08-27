@@ -10,14 +10,17 @@ import { MemberProfile } from '../components/members/MemberProfile'
 import { MemberExitForm } from '../components/members/MemberExitForm'
 import { useUIStore } from '../store/uiStore'
 import { formatCurrency, formatDate } from '../lib/utils'
+import { useTranslation } from 'react-i18next'
 import { ArrowLeft, Plus, Wallet, ToggleLeft, ToggleRight, Gift } from 'lucide-react'
 import { useEffect, useState, useCallback } from 'react'
 import { supabase } from '../lib/supabase'
+import { ReportExportButtons } from '../components/reports/ReportExportButtons'
 import type { SavingsAccountData } from '../hooks/useSavings'
 
 export default function MemberDetailPage() {
   const { id } = useParams()
   const navigate = useNavigate()
+  const { t } = useTranslation()
   const { members, loading: membersLoading, toggleMemberStatus, fetchMembers } = useMembers()
   const { role } = useAuth()
   const activeModal = useUIStore((s) => s.activeModal)
@@ -98,28 +101,67 @@ export default function MemberDetailPage() {
   }
 
   if (membersLoading) return <Spinner size="lg" />
-  if (!member) return <div className="text-center py-12 text-gray-500">Member not found</div>
+  if (!member) return <div className="text-center py-12 text-gray-500">{t('membership.notFound')}</div>
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <Button variant="ghost" onClick={() => navigate('/members')}>
-          <ArrowLeft className="h-4 w-4 mr-2" /> Back to Members
+          <ArrowLeft className="h-4 w-4 mr-2" /> {t('membership.backToMembers')}
         </Button>
         <div className="flex items-center gap-2">
+          <ReportExportButtons
+            filename={`member-${member.member_number}`}
+            title={`${t('membership.profile')} - ${member.name}`}
+            subtitle={`${t('membership.memberCode')}: ${member.member_number} · ${t('common.status')}: ${member.status} · ${t('membership.joinDate')}: ${formatDate(member.join_date)}`}
+            headers={[t('membership.section'), t('membership.detail')]}
+            rows={[
+              [t('membership.memberCode'), member.member_number],
+              [t('membership.fullName'), member.name],
+              [t('membership.nameBangla'), member.name_bn || '-'],
+              [t('membership.guardian'), member.guardian_name || '-'],
+              [t('membership.motherName'), member.mother_name || '-'],
+              [t('membership.spouse'), member.spouse_name || '-'],
+              [t('membership.dateOfBirth'), member.date_of_birth ? formatDate(member.date_of_birth) : '-'],
+              [t('membership.gender'), member.gender || '-'],
+              [t('membership.bloodGroupLabel'), member.blood_group || '-'],
+              [t('membership.maritalStatusLabel'), member.marital_status || '-'],
+              [t('membership.nid'), member.nid || '-'],
+              [t('membership.college'), member.college_name || '-'],
+              [t('membership.occupation'), member.designation || '-'],
+              [t('membership.department'), member.department || '-'],
+              [t('membership.employeeId'), member.employee_id || '-'],
+              [t('common.phone'), member.phone || '-'],
+              [t('common.email'), member.email || '-'],
+              [t('membership.presentAddress'), member.present_address || '-'],
+              [t('membership.permanentAddress'), member.permanent_address || '-'],
+              [t('membership.nomineeName'), `${member.nominee_name || '-'}${member.nominee_relation ? ` (${member.nominee_relation})` : ''}`],
+              [t('membership.nomineePhone'), member.nominee_phone || '-'],
+              [t('membership.bankName'), member.bank_name || '-'],
+              [t('membership.bankAccountNumber'), member.bank_account_number || '-'],
+              [t('membership.branchName'), member.branch_name || '-'],
+              [t('membership.savingsAccountsCount'), String(savingsAccounts.length)],
+              [t('savings.balance'), formatCurrency(savingsAccounts.reduce((s, a) => s + a.balance, 0))],
+              [t('membership.loansTitle'), String(loans.length)],
+              [t('membership.totalLoanAmount'), formatCurrency(loans.reduce((s, l) => s + l.amount, 0))],
+              [t('membership.profitReceived'), formatCurrency(profitDistros.reduce((s, p) => s + p.amount, 0))],
+              [t('common.status'), member.status],
+              [t('membership.joinDate'), formatDate(member.join_date)],
+            ]}
+          />
           <Badge variant={member.status === 'active' ? 'success' : member.status === 'inactive' ? 'warning' : 'danger'}>
-            {member.status}
+            {t(`membership.${member.status}`)}
           </Badge>
           {role !== 'member' && (
             <Button
               variant="ghost"
               size="sm"
               onClick={async () => { await toggleMemberStatus(member.id, member.status); fetchMembers() }}
-              title={member.status === 'active' ? 'Deactivate' : 'Activate'}
+              title={member.status === 'active' ? t('common.inactive') : t('common.active')}
             >
               {member.status === 'active'
-                ? <><ToggleRight className="h-4 w-4 text-green-600 mr-1" /> Deactivate</>
-                : <><ToggleLeft className="h-4 w-4 text-gray-400 mr-1" /> Activate</>
+                ? <><ToggleRight className="h-4 w-4 text-green-600 mr-1" /> {t('common.inactive')}</>
+                : <><ToggleLeft className="h-4 w-4 text-gray-400 mr-1" /> {t('common.active')}</>
               }
             </Button>
           )}
@@ -134,16 +176,16 @@ export default function MemberDetailPage() {
         <div className="lg:col-span-2 space-y-6">
           <Card title={
             <div className="flex items-center justify-between w-full">
-              <span>Savings Accounts</span>
+              <span>{t('membership.savingsAccountsTitle')}</span>
               <Button size="sm" onClick={handleOpenAccount} loading={opening}>
-                <Plus className="h-4 w-4 mr-1" /> Open Account
+                <Plus className="h-4 w-4 mr-1" /> {t('membership.openAccount')}
               </Button>
             </div>
           }>
             {loadingAccounts ? (
               <Spinner size="sm" />
             ) : savingsAccounts.length === 0 ? (
-              <p className="text-sm text-gray-500">No savings accounts yet.</p>
+              <p className="text-sm text-gray-500">{t('membership.noSavingsAccounts')}</p>
             ) : (
               <div className="space-y-3">
                 {savingsAccounts.map((acct) => (
@@ -160,9 +202,9 @@ export default function MemberDetailPage() {
             )}
           </Card>
 
-          <Card title="Loans">
+          <Card title={t('membership.loansTitle')}>
             {loans.length === 0 ? (
-              <p className="text-sm text-gray-500">No loans found.</p>
+              <p className="text-sm text-gray-500">{t('membership.noLoansFound')}</p>
             ) : (
               <div className="space-y-2">
                 {loans.map((ln) => (
@@ -171,16 +213,16 @@ export default function MemberDetailPage() {
                       <p className="font-medium text-sm">{ln.loan_number}</p>
                       <p className="text-xs text-gray-500">{formatCurrency(ln.amount)}</p>
                     </div>
-                    <Badge variant={ln.status === 'disbursed' ? 'success' : ln.status === 'pending' ? 'warning' : ln.status === 'closed' ? 'default' : 'danger'}>{ln.status}</Badge>
+                    <Badge variant={ln.status === 'disbursed' ? 'success' : ln.status === 'pending' ? 'warning' : ln.status === 'closed' ? 'default' : 'danger'}>{t(`status.${ln.status}`)}</Badge>
                   </div>
                 ))}
               </div>
             )}
           </Card>
 
-          <Card title="Profit Distributions">
+          <Card title={t('membership.profitDistributionsTitle')}>
             {profitDistros.length === 0 ? (
-              <p className="text-sm text-gray-500">No profit distributions received.</p>
+              <p className="text-sm text-gray-500">{t('membership.noProfitDistributions')}</p>
             ) : (
               <div className="space-y-2">
                 {profitDistros.map((pd, i) => (
@@ -202,7 +244,7 @@ export default function MemberDetailPage() {
       </div>
 
       {activeModal === 'exit-member' && modalData && (
-        <Modal title="Process Member Exit">
+        <Modal title={t('membership.processExit')}>
           <MemberExitForm memberId={modalData.memberId} memberName={modalData.memberName} />
         </Modal>
       )}

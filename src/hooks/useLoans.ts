@@ -181,20 +181,6 @@ export function useLoans() {
       await supabase.from('loan_emi_schedule').insert(emiRows as never)
 
       setLoans(prev => prev.map(l => l.id === loanId ? data as LoanData : l))
-
-      // Auto-journalize loan disbursement
-      const { autoJournalize } = await import('../lib/accounting')
-      const { data: { user } } = await supabase.auth.getUser()
-      await autoJournalize({
-        samitiId: samitiId!,
-        transactionType: 'loan_disbursement',
-        description: `Loan disbursement - ${loan.loan_number}`,
-        amount: loan.amount,
-        referenceId: data.id,
-        referenceTable: 'loans',
-        performedBy: user?.id || '',
-        entryDate: new Date().toISOString().split('T')[0],
-      })
     }
     return { data: data as LoanData | null, error }
   }

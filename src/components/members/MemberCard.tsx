@@ -1,6 +1,7 @@
 import { useNavigate } from 'react-router-dom'
 import { Badge } from '../ui/Badge'
 import { formatDate } from '../../lib/utils'
+import { useTranslation } from 'react-i18next'
 import type { MemberData } from '../../hooks/useMembers'
 
 const statusVariant: Record<string, 'success' | 'warning' | 'danger'> = {
@@ -15,6 +16,7 @@ interface MemberCardProps {
 
 export function MemberCard({ member }: MemberCardProps) {
   const navigate = useNavigate()
+  const { t } = useTranslation()
 
   return (
     <div
@@ -29,14 +31,14 @@ export function MemberCard({ member }: MemberCardProps) {
           <p className="font-medium text-gray-900 truncate">{member.name}</p>
           <p className="text-xs text-gray-500">{member.member_number}</p>
         </div>
-        <Badge variant={statusVariant[member.status]}>{member.status}</Badge>
+        <Badge variant={statusVariant[member.status]}>{t(`membership.${member.status}`)}</Badge>
       </div>
       <div className="text-xs text-gray-500 space-y-1 border-t pt-2">
         {member.designation && <p>🎓 {member.designation}</p>}
         {member.college_name && <p>🏛️ {member.college_name}</p>}
         {member.phone && <p>📞 {member.phone}</p>}
         {member.mpo_index_number && <p>📋 MPO: {member.mpo_index_number}</p>}
-        <p>📅 Joined {formatDate(member.join_date)}</p>
+        <p>📅 {t('membership.memberSince', { date: formatDate(member.join_date) })}</p>
       </div>
     </div>
   )

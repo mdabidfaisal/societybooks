@@ -3,6 +3,7 @@ import { supabase } from '../../lib/supabase'
 import { useLoans } from '../../hooks/useLoans'
 import { formatCurrency, formatDate } from '../../lib/utils'
 import { Badge } from '../ui/Badge'
+import { useTranslation } from 'react-i18next'
 import { RepaymentForm } from './RepaymentForm'
 import type { LoanEMIData } from '../../hooks/useLoans'
 
@@ -20,6 +21,7 @@ interface EMIChartProps {
 
 export function EMIChart({ loanId, loanStatus }: EMIChartProps) {
   const { getEMISchedule } = useLoans()
+  const { t } = useTranslation()
   const [schedule, setSchedule] = useState<LoanEMIData[]>([])
   const [loading, setLoading] = useState(true)
 
@@ -43,8 +45,8 @@ export function EMIChart({ loanId, loanStatus }: EMIChartProps) {
 
   useEffect(() => { fetchSchedule() }, [fetchSchedule])
 
-  if (loading) return <p className="text-sm text-gray-500">Loading schedule...</p>
-  if (schedule.length === 0) return <p className="text-sm text-gray-500">EMI schedule not yet generated.</p>
+  if (loading) return <p className="text-sm text-gray-500">{t('loans.loadingSchedule')}</p>
+  if (schedule.length === 0) return <p className="text-sm text-gray-500">{t('loans.noSchedule')}</p>
 
   const totalPaid = schedule.reduce((s, e) => s + e.paid_amount, 0)
   const totalDue = schedule.reduce((s, e) => s + e.total_amount, 0)
@@ -56,21 +58,21 @@ export function EMIChart({ loanId, loanStatus }: EMIChartProps) {
     <div className="space-y-4">
       <div className="bg-gray-50 rounded-lg p-4">
         <div className="flex justify-between text-sm mb-2">
-          <span className="text-gray-500">Repayment Progress</span>
+          <span className="text-gray-500">{t('loans.repaymentProgress')}</span>
           <span className="font-medium">{progress}%</span>
         </div>
         <div className="w-full bg-gray-200 rounded-full h-2.5">
           <div className="bg-green-500 h-2.5 rounded-full transition-all" style={{ width: `${progress}%` }} />
         </div>
         <div className="flex justify-between text-xs text-gray-500 mt-1">
-          <span>Paid: {formatCurrency(totalPaid)}</span>
-          <span>Total: {formatCurrency(totalDue)}</span>
+          <span>{t('loans.paidLabel', { amount: formatCurrency(totalPaid) })}</span>
+          <span>{t('loans.totalLabel', { amount: formatCurrency(totalDue) })}</span>
         </div>
       </div>
 
       {loanStatus === 'closed' && totalPaid >= totalDue && (
         <div className="bg-green-50 border border-green-200 text-green-700 text-sm rounded-lg p-3 text-center font-medium">
-          Loan fully paid and closed
+          {t('loans.loanFullyPaid')}
         </div>
       )}
 
@@ -79,13 +81,13 @@ export function EMIChart({ loanId, loanStatus }: EMIChartProps) {
           <thead>
             <tr className="border-b text-left text-xs font-medium text-gray-500 uppercase">
               <th className="pb-3 pr-4">#</th>
-              <th className="pb-3 pr-4">Due Date</th>
-              <th className="pb-3 pr-4 text-right">Principal</th>
-              <th className="pb-3 pr-4 text-right">Profit</th>
-              <th className="pb-3 pr-4 text-right">Total</th>
-              <th className="pb-3 pr-4 text-right">Paid</th>
-              <th className="pb-3 pr-4">Status</th>
-              <th className="pb-3 pr-4">Action</th>
+              <th className="pb-3 pr-4">{t('loans.dueDateHeader')}</th>
+              <th className="pb-3 pr-4 text-right">{t('loans.principal')}</th>
+              <th className="pb-3 pr-4 text-right">{t('loans.profitCol')}</th>
+              <th className="pb-3 pr-4 text-right">{t('loans.totalHeader')}</th>
+              <th className="pb-3 pr-4 text-right">{t('loans.paidCol')}</th>
+              <th className="pb-3 pr-4">{t('common.status')}</th>
+              <th className="pb-3 pr-4">{t('common.actions')}</th>
             </tr>
           </thead>
           <tbody>
@@ -97,7 +99,7 @@ export function EMIChart({ loanId, loanStatus }: EMIChartProps) {
                 <td className="py-3 pr-4 text-right">{formatCurrency(emi.profit_amount)}</td>
                 <td className="py-3 pr-4 text-right font-medium">{formatCurrency(emi.total_amount)}</td>
                 <td className="py-3 pr-4 text-right">{emi.paid_amount > 0 ? formatCurrency(emi.paid_amount) : '-'}</td>
-                <td className="py-3 pr-4"><Badge variant={emiVariant[emi.status] || 'default'}>{emi.status}</Badge></td>
+                <td className="py-3 pr-4"><Badge variant={emiVariant[emi.status] || 'default'}>{t(`status.${emi.status}`, { defaultValue: emi.status })}</Badge></td>
                 <td className="py-3 pr-4">
                   {canPay && emi.status !== 'paid' ? (
                     <RepaymentForm
@@ -111,7 +113,7 @@ export function EMIChart({ loanId, loanStatus }: EMIChartProps) {
                       onSuccess={fetchSchedule}
                     />
                   ) : (
-                    <span className="text-xs text-gray-400">{emi.status === 'paid' ? 'Paid' : '-'}</span>
+                    <span className="text-xs text-gray-400">{emi.status === 'paid' ? t('status.paid') : '-'}</span>
                   )}
                 </td>
               </tr>

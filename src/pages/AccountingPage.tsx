@@ -1,56 +1,57 @@
 import { useNavigate } from 'react-router-dom'
-import { Card } from '../components/ui/Card'
+import { useTranslation } from 'react-i18next'
 import { BookOpen, Scale, FileText, TrendingUp, TrendingDown, ArrowRight } from 'lucide-react'
 import { useAuth } from '../hooks/useAuth'
-
-const features = [
-  {
-    title: 'Balance Sheet',
-    description: 'Complete financial position — assets, liabilities, and equity as of any date.',
-    path: '/accounting/balance-sheet',
-    icon: Scale,
-    color: 'text-emerald-600 bg-emerald-100',
-  },
-  {
-    title: 'Chart of Accounts',
-    description: 'Manage your full chart of accounts — create, view, and organize account codes by type.',
-    path: '/accounting/accounts',
-    icon: BookOpen,
-    color: 'text-blue-600 bg-blue-100',
-  },
-  {
-    title: 'Journal Entries',
-    description: 'Post and browse journal entries. View full details with debit/credit lines for each entry.',
-    path: '/accounting/journal',
-    icon: FileText,
-    color: 'text-purple-600 bg-purple-100',
-  },
-  {
-    title: 'Income & Expense',
-    description: 'View income and expense breakdown by account category with date-range filtering.',
-    path: '/accounting/income-expense',
-    icon: TrendingUp,
-    color: 'text-green-600 bg-green-100',
-  },
-  {
-    title: 'Profit & Loss',
-    description: 'Net profit or loss summary for any date range — income minus expenses at a glance.',
-    path: '/accounting/profit-loss',
-    icon: TrendingDown,
-    color: 'text-orange-600 bg-orange-100',
-  },
-]
 
 export default function AccountingPage() {
   const navigate = useNavigate()
   const { role } = useAuth()
+  const { t } = useTranslation()
   if (role !== 'society_admin') return null
+
+  const features = [
+    {
+      title: t('accounting.balanceSheet'),
+      description: t('accounting.balanceSheetDesc'),
+      path: '/accounting/balance-sheet',
+      icon: Scale,
+      color: 'text-emerald-600 bg-emerald-100',
+    },
+    {
+      title: t('accounting.chartOfAccounts'),
+      description: t('accounting.chartOfAccountsDesc'),
+      path: '/accounting/accounts',
+      icon: BookOpen,
+      color: 'text-blue-600 bg-blue-100',
+    },
+    {
+      title: t('accounting.journalEntries'),
+      description: t('accounting.journalEntriesDesc'),
+      path: '/accounting/journal',
+      icon: FileText,
+      color: 'text-purple-600 bg-purple-100',
+    },
+    {
+      title: t('accounting.incomeExpense'),
+      description: t('accounting.incomeExpenseDesc'),
+      path: '/accounting/income-expense',
+      icon: TrendingUp,
+      color: 'text-green-600 bg-green-100',
+    },
+    {
+      title: t('accounting.profitLoss'),
+      description: t('accounting.profitLossDesc'),
+      path: '/accounting/profit-loss',
+      icon: TrendingDown,
+      color: 'text-orange-600 bg-orange-100',
+    },
+  ]
 
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">Accounts Module</h1>
-        <p className="text-sm text-gray-500 mt-1">Select a feature to manage accounts, journal entries, and financial reports.</p>
+        <h1 className="text-2xl font-bold text-gray-900">{t('accounting.title')}</h1>
+        <p className="text-sm text-gray-500 mt-1">{t('accounting.moduleDesc')}</p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

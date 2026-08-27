@@ -5,6 +5,7 @@ import { Badge } from '../ui/Badge'
 import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../hooks/useAuth'
 import { formatDate } from '../../lib/utils'
+import { useTranslation } from 'react-i18next'
 import { Clock } from 'lucide-react'
 
 interface AuditEntry {
@@ -26,6 +27,7 @@ const actionVariant: Record<string, 'success' | 'warning' | 'danger'> = {
 
 export function AuditLogView() {
   const { samitiId } = useAuth()
+  const { t } = useTranslation()
   const [entries, setEntries] = useState<AuditEntry[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -53,7 +55,7 @@ export function AuditLogView() {
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
-        <p className="text-sm text-gray-500">Last 50 audit entries.</p>
+        <p className="text-sm text-gray-500">{t('settings.last50Audit')}</p>
         <RefreshButton onRefresh={fetchLogs} />
       </div>
 
@@ -65,7 +67,7 @@ export function AuditLogView() {
         <Spinner size="sm" />
       ) : entries.length === 0 ? (
         <p className="text-sm text-gray-500">
-          No audit entries yet. The audit trigger (011_audit_trigger.sql) needs to be run in the SQL Editor for automatic logging.
+          {t('settings.noAuditEntriesYet')}
         </p>
       ) : (
         <div className="space-y-2 max-h-96 overflow-y-auto">

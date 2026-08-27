@@ -5,6 +5,8 @@ import { Table, type Column } from '../ui/Table'
 import { Badge } from '../ui/Badge'
 import { RefreshButton } from '../ui/RefreshButton'
 import { Input } from '../ui/Input'
+import { ReportExportButtons } from '../reports/ReportExportButtons'
+import { useTranslation } from 'react-i18next'
 import { Search } from 'lucide-react'
 
 export interface AuditEntry {
@@ -26,6 +28,7 @@ const actionVariant: Record<string, 'success' | 'warning' | 'danger' | 'info'> =
 }
 
 export function SystemAuditLog() {
+  const { t } = useTranslation()
   const [entries, setEntries] = useState<AuditEntry[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -57,19 +60,19 @@ export function SystemAuditLog() {
   )
 
   const columns: Column<AuditEntry>[] = [
-    { key: 'action', header: 'Action', render: (e) => (
+    { key: 'action', header: t('superAdmin.action'), render: (e) => (
       <Badge variant={actionVariant[e.action] || 'default'}>{e.action}</Badge>
     )},
-    { key: 'table_name', header: 'Table', render: (e) => (
+    { key: 'table_name', header: t('superAdmin.table'), render: (e) => (
       <span className="font-medium">{e.table_name}</span>
     )},
-    { key: 'samiti_id', header: 'Samiti', render: (e) => e.samiti_id ? (
+    { key: 'samiti_id', header: t('superAdmin.samiti'), render: (e) => e.samiti_id ? (
       <span className="text-xs font-mono">{e.samiti_id.slice(0, 8)}...</span>
     ) : <span className="text-gray-400">—</span>},
-    { key: 'record_id', header: 'Record ID', render: (e) => e.record_id ? (
+    { key: 'record_id', header: t('superAdmin.recordId'), render: (e) => e.record_id ? (
       <span className="text-xs font-mono">{e.record_id.slice(0, 8)}...</span>
     ) : <span className="text-gray-400">—</span>},
-    { key: 'created_at', header: 'Date', render: (e) => formatDate(e.created_at) },
+    { key: 'created_at', header: t('common.date'), render: (e) => formatDate(e.created_at) },
   ]
 
   return (
@@ -78,12 +81,28 @@ export function SystemAuditLog() {
         <div className="flex items-center gap-2 max-w-md flex-1">
           <Search className="h-5 w-5 text-gray-400" />
           <Input
-            placeholder="Search by action, table, or record ID..."
+            placeholder={t('superAdmin.searchAudit')}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
         </div>
-        <RefreshButton onRefresh={fetchLogs} />
+        <div className="flex items-center gap-2">
+          {filtered.length > 0 && (
+            <ReportExportButtons
+              filename={`audit-log-${new Date().toISOString().split('T')[0]}`}
+              title={t('superAdmin.systemAudit')}
+              headers={[t('common.date'), t('superAdmin.action'), t('superAdmin.table'), t('superAdmin.samiti'), t('superAdmin.recordId')]}
+              rows={filtered.map((e) => [
+                formatDate(e.created_at),
+                e.action,
+                e.table_name,
+                e.samiti_id || '-',
+                e.record_id || '-',
+              ])}
+            />
+          )}
+          <RefreshButton onRefresh={fetchLogs} />
+        </div>
       </div>
 
       {error && (
@@ -95,7 +114,7 @@ export function SystemAuditLog() {
         data={filtered}
         keyExtractor={(e) => e.id}
         loading={loading}
-        emptyMessage="No audit entries found."
+        emptyMessage={t('superAdmin.noAuditEntries')}
       />
     </div>
   )

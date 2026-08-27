@@ -3,9 +3,12 @@ import { useNavigate, useSearchParams } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import { Button } from '../ui/Button'
 import { Input } from '../ui/Input'
+import { useTranslation } from 'react-i18next'
+import { LanguageToggle } from '../layout/LanguageToggle'
 
 export function LoginForm() {
   const navigate = useNavigate()
+  const { t } = useTranslation()
   const [searchParams] = useSearchParams()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -14,11 +17,11 @@ export function LoginForm() {
 
   useEffect(() => {
     if (searchParams.get('deactivated') === '1') {
-      setError('Your samiti has been deactivated. Please contact the super administrator.')
+      setError(t('auth.accountDeactivated'))
     } else if (searchParams.get('member_inactive') === '1') {
-      setError('Your membership is no longer active. Please contact the samiti admin.')
+      setError(t('auth.accountInactive'))
     }
-  }, [searchParams])
+  }, [searchParams, t])
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -48,7 +51,7 @@ export function LoginForm() {
 
       if (samiti && !samiti.is_active) {
         await supabase.auth.signOut()
-        setError('Your samiti has been deactivated. Please contact the super administrator.')
+        setError(t('auth.accountDeactivated'))
         setLoading(false)
         return
       }
@@ -65,7 +68,7 @@ export function LoginForm() {
 
         if (member && member.status !== 'active') {
           await supabase.auth.signOut()
-          setError('Your membership is no longer active. Please contact the samiti admin.')
+          setError(t('auth.accountInactive'))
           setLoading(false)
           return
         }
@@ -85,12 +88,12 @@ export function LoginForm() {
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
           <img src="/societybooks_logo.svg" alt="SocietyBooks" className="h-16 mx-auto" />
-          <p className="text-xs text-gray-400 mt-2 tracking-wider">COOPERATIVE ACCOUNTS, MADE CLEAR</p>
+          <p className="text-xs text-gray-400 mt-2 tracking-wider">{t('auth.cooperativeTagline')}</p>
         </div>
 
         <form onSubmit={handleLogin} className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 space-y-4">
           <div className="text-center mb-2">
-            <p className="text-sm text-gray-500">Sign in to your account</p>
+            <p className="text-sm text-gray-500">{t('auth.loginTitle')}</p>
           </div>
 
           {error && (
@@ -99,7 +102,7 @@ export function LoginForm() {
 
           <Input
             id="email"
-            label="Email"
+            label={t('auth.email')}
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
@@ -109,7 +112,7 @@ export function LoginForm() {
 
           <Input
             id="password"
-            label="Password"
+            label={t('auth.password')}
             type="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
@@ -118,9 +121,13 @@ export function LoginForm() {
           />
 
           <Button type="submit" loading={loading} className="w-full">
-            Sign In
+            {loading ? t('auth.loggingIn') : t('auth.signIn')}
           </Button>
         </form>
+
+        <div className="flex justify-center mt-4">
+          <LanguageToggle />
+        </div>
       </div>
     </div>
   )

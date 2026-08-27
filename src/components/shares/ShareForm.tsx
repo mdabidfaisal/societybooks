@@ -6,12 +6,11 @@ import { Input } from '../ui/Input'
 import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../hooks/useAuth'
 import { useUIStore } from '../../store/uiStore'
+import { useTranslation } from 'react-i18next'
 
-const shareSchema = z.object({
-  shares_held: z.coerce.number().int().min(0),
-})
-
-type ShareFormData = z.infer<typeof shareSchema>
+type ShareFormData = {
+  shares_held: number
+}
 
 interface ShareFormProps {
   memberId: string
@@ -21,6 +20,11 @@ interface ShareFormProps {
 export function ShareForm({ memberId, onSuccess }: ShareFormProps) {
   const { samitiId } = useAuth()
   const closeModal = useUIStore((s) => s.closeModal)
+  const { t } = useTranslation()
+
+  const shareSchema = z.object({
+    shares_held: z.coerce.number().int().min(0),
+  })
 
   const { register, handleSubmit, formState: { isSubmitting } } = useForm<ShareFormData>({
     resolver: zodResolver(shareSchema),
@@ -32,7 +36,7 @@ export function ShareForm({ memberId, onSuccess }: ShareFormProps) {
     } as never).eq('id', memberId)
 
     if (error) {
-      alert('Failed to update shares: ' + error.message)
+      alert(t('shares.updateFailed', { message: error.message }))
     } else {
       onSuccess?.()
       closeModal()
@@ -41,10 +45,10 @@ export function ShareForm({ memberId, onSuccess }: ShareFormProps) {
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-      <Input id="shares_held" label="Number of Shares" type="number" {...register('shares_held')} />
+      <Input id="shares_held" label={t('shares.noOfShares')} type="number" {...register('shares_held')} />
       <div className="flex justify-end gap-2">
-        <Button type="button" variant="secondary" onClick={closeModal}>Cancel</Button>
-        <Button type="submit" loading={isSubmitting}>Update Shares</Button>
+        <Button type="button" variant="secondary" onClick={closeModal}>{t('common.cancel')}</Button>
+        <Button type="submit" loading={isSubmitting}>{t('shares.updateShares')}</Button>
       </div>
     </form>
   )

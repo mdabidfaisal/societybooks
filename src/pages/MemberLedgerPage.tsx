@@ -7,13 +7,16 @@ import { Badge } from '../components/ui/Badge'
 import { Spinner } from '../components/ui/Spinner'
 import { EmptyState } from '../components/ui/EmptyState'
 import { RefreshButton } from '../components/ui/RefreshButton'
+import { ReportExportButtons } from '../components/reports/ReportExportButtons'
 import { formatCurrency, formatDate } from '../lib/utils'
+import { useTranslation } from 'react-i18next'
 import { Wallet, HandshakeIcon, Gift, ChevronDown, ChevronUp } from 'lucide-react'
 
 interface MemberOption { value: string; label: string }
 
 export default function MemberLedgerPage() {
   const { samitiId } = useAuth()
+  const { t } = useTranslation()
   const [members, setMembers] = useState<MemberOption[]>([])
   const [selectedMemberId, setSelectedMemberId] = useState('')
   const [loading, setLoading] = useState(false)
@@ -89,29 +92,53 @@ export default function MemberLedgerPage() {
 
   const totalSavings = savingsTx.length > 0 ? savingsTx[0]?.balance || 0 : 0
   const totalDistributed = distros.reduce((s, d) => s + d.amount, 0)
+  const selectedMemberLabel = members.find((m) => m.value === selectedMemberId)?.label || ''
 
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-gray-900">Member Ledger</h1>
-        <RefreshButton onRefresh={loadLedger} />
+        <h1 className="text-2xl font-bold text-gray-900">{t('ledger.title')}</h1>
+        <div className="flex items-center gap-2">
+          {selectedMemberId && (
+            <ReportExportButtons
+              filename={`member-ledger-${selectedMemberId.slice(0, 8)}`}
+              title={t('ledger.title')}
+              subtitle={t('ledger.exportMember', { name: selectedMemberLabel })}
+              headers={[t('common.date'), t('common.type'), t('common.amount'), t('common.balance'), t('savings.paymentMethod'), t('common.reference')]}
+              rows={savingsTx.map((tx) => [
+                formatDate(tx.date),
+                t(`txnType.${tx.type}`, { defaultValue: tx.type }),
+                formatCurrency(tx.amount),
+                formatCurrency(tx.balance),
+                tx.method ? t(`savings.${tx.method}`, { defaultValue: tx.method }) : '',
+                tx.reference || '',
+              ])}
+              totals={[
+                { label: t('ledger.currentSavings'), value: formatCurrency(totalSavings) },
+                { label: t('ledger.profitReceived'), value: formatCurrency(totalDistributed) },
+                { label: t('ledger.totalTransactions'), value: String(savingsTx.length) },
+              ]}
+            />
+          )}
+          <RefreshButton onRefresh={loadLedger} />
+        </div>
       </div>
 
       <Card>
         <div className="flex items-end gap-4">
           <div className="flex-1">
-            <label className="block text-xs font-medium text-gray-500 mb-1">Select Member</label>
+            <label className="block text-xs font-medium text-gray-500 mb-1">{t('ledger.selectMember')}</label>
             <Select
               value={selectedMemberId}
               onChange={(e) => { setSelectedMemberId(e.target.value); setExpandedLoan(null) }}
-              options={[{ value: '', label: 'Choose a member...' }, ...members]}
+              options={[{ value: '', label: t('ledger.chooseMember') }, ...members]}
             />
           </div>
         </div>
       </Card>
 
       {!selectedMemberId ? (
-        <EmptyState title="Select a member" description="Choose a member above to view their full ledger." />
+        <EmptyState title={t('ledger.emptyTitle')} description={t('ledger.emptyDesc')} />
       ) : loading ? (
         <Spinner size="lg" />
       ) : (
@@ -119,38 +146,38 @@ export default function MemberLedgerPage() {
           {/* Quick stats */}
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div className="bg-white rounded-lg border border-gray-200 p-4">
-              <p className="text-xs font-medium text-gray-500 uppercase">Current Savings</p>
+              <p className="text-xs font-medium text-gray-500 uppercase">{t('ledger.currentSavings')}</p>
               <p className="text-2xl font-bold text-blue-700 mt-1">{formatCurrency(totalSavings)}</p>
             </div>
             <div className="bg-white rounded-lg border border-gray-200 p-4">
-              <p className="text-xs font-medium text-gray-500 uppercase">Active Loans</p>
+              <p className="text-xs font-medium text-gray-500 uppercase">{t('ledger.activeLoans')}</p>
               <p className="text-2xl font-bold text-gray-900 mt-1">{loans.filter((l) => l.status === 'disbursed').length}</p>
             </div>
             <div className="bg-white rounded-lg border border-gray-200 p-4">
-              <p className="text-xs font-medium text-gray-500 uppercase">Profit Received</p>
+              <p className="text-xs font-medium text-gray-500 uppercase">{t('ledger.profitReceived')}</p>
               <p className="text-2xl font-bold text-green-700 mt-1">{formatCurrency(totalDistributed)}</p>
             </div>
             <div className="bg-white rounded-lg border border-gray-200 p-4">
-              <p className="text-xs font-medium text-gray-500 uppercase">Total Transactions</p>
+              <p className="text-xs font-medium text-gray-500 uppercase">{t('ledger.totalTransactions')}</p>
               <p className="text-2xl font-bold text-gray-900 mt-1">{savingsTx.length}</p>
             </div>
           </div>
 
           {/* Savings Transactions */}
-          <Card title="Savings Transaction History">
+          <Card title={t('ledger.savingsHistory')}>
             {savingsTx.length === 0 ? (
-              <p className="text-sm text-gray-500">No savings transactions.</p>
+              <p className="text-sm text-gray-500">{t('ledger.noSavingsTx')}</p>
             ) : (
               <div className="overflow-x-auto max-h-72 overflow-y-auto">
                 <table className="w-full text-sm">
                   <thead className="sticky top-0 bg-gray-50">
                     <tr className="text-left text-xs font-medium text-gray-500 uppercase">
-                      <th className="py-2 px-3">Date</th>
-                      <th className="py-2 px-3">Type</th>
-                      <th className="py-2 px-3 text-right">Amount</th>
-                      <th className="py-2 px-3 text-right">Balance</th>
-                      <th className="py-2 px-3">Method</th>
-                      <th className="py-2 px-3">Reference</th>
+                      <th className="py-2 px-3">{t('common.date')}</th>
+                      <th className="py-2 px-3">{t('common.type')}</th>
+                      <th className="py-2 px-3 text-right">{t('common.amount')}</th>
+                      <th className="py-2 px-3 text-right">{t('common.balance')}</th>
+                      <th className="py-2 px-3">{t('savings.paymentMethod')}</th>
+                      <th className="py-2 px-3">{t('common.reference')}</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-100">
@@ -159,12 +186,12 @@ export default function MemberLedgerPage() {
                         <td className="py-2 px-3 text-gray-500 text-xs">{formatDate(tx.date)}</td>
                         <td className="py-2 px-3">
                           <Badge variant={tx.type === 'deposit' ? 'success' : tx.type === 'withdrawal' ? 'danger' : 'warning'}>
-                            {tx.type}
+                            {t(`txnType.${tx.type}`, { defaultValue: tx.type })}
                           </Badge>
                         </td>
                         <td className="py-2 px-3 text-right font-medium">{formatCurrency(tx.amount)}</td>
                         <td className="py-2 px-3 text-right text-gray-700">{formatCurrency(tx.balance)}</td>
-                        <td className="py-2 px-3 text-gray-500 text-xs capitalize">{tx.method || '-'}</td>
+                        <td className="py-2 px-3 text-gray-500 text-xs capitalize">{tx.method ? t(`savings.${tx.method}`, { defaultValue: tx.method }) : '-'}</td>
                         <td className="py-2 px-3 text-gray-400 text-xs">{tx.reference || '-'}</td>
                       </tr>
                     ))}
@@ -175,9 +202,9 @@ export default function MemberLedgerPage() {
           </Card>
 
           {/* Loans */}
-          <Card title="Loans">
+          <Card title={t('ledger.loansTitle')}>
             {loans.length === 0 ? (
-              <p className="text-sm text-gray-500">No loans.</p>
+              <p className="text-sm text-gray-500">{t('ledger.noLoans')}</p>
             ) : (
               <div className="space-y-2">
                 {loans.map((ln) => (
@@ -195,7 +222,7 @@ export default function MemberLedgerPage() {
                       </div>
                       <div className="flex items-center gap-3">
                         <Badge variant={ln.status === 'disbursed' ? 'success' : ln.status === 'pending' ? 'warning' : ln.status === 'closed' ? 'default' : 'danger'}>
-                          {ln.status}
+                          {t(`status.${ln.status}`, { defaultValue: ln.status })}
                         </Badge>
                         {expandedLoan === ln.id ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
                       </div>
@@ -203,8 +230,8 @@ export default function MemberLedgerPage() {
                     {expandedLoan === ln.id && (
                       <div className="px-3 pb-3 border-t pt-2">
                         <div className="grid grid-cols-2 gap-2 text-sm">
-                          <div><span className="text-gray-500">Disbursed:</span> <span>{ln.disbursed_at ? formatDate(ln.disbursed_at) : 'Not yet'}</span></div>
-                          <div><span className="text-gray-500">Status:</span> <span className="capitalize">{ln.status}</span></div>
+                          <div><span className="text-gray-500">{t('ledger.disbursed')}</span> <span>{ln.disbursed_at ? formatDate(ln.disbursed_at) : t('ledger.notYet')}</span></div>
+                          <div><span className="text-gray-500">{t('ledger.status')}</span> <span className="capitalize">{t(`status.${ln.status}`, { defaultValue: ln.status })}</span></div>
                         </div>
                       </div>
                     )}
@@ -215,9 +242,9 @@ export default function MemberLedgerPage() {
           </Card>
 
           {/* Profit Distributions */}
-          <Card title="Profit Distributions">
+          <Card title={t('ledger.profitDistributionsTitle')}>
             {distros.length === 0 ? (
-              <p className="text-sm text-gray-500">No profit distributions received.</p>
+              <p className="text-sm text-gray-500">{t('ledger.noDistros')}</p>
             ) : (
               <div className="space-y-2">
                 {distros.map((d, i) => (

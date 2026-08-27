@@ -2,11 +2,13 @@ import { Outlet } from 'react-router-dom'
 import { Sidebar } from './Sidebar'
 import { Header } from './Header'
 import { useUIStore } from '../../store/uiStore'
+import { useTranslation } from 'react-i18next'
 
 export function AppLayout() {
   const sidebarOpen = useUIStore((s) => s.sidebarOpen)
   const toggleSidebar = useUIStore((s) => s.toggleSidebar)
   const setSidebarOpen = useUIStore((s) => s.setSidebarOpen)
+  const { t } = useTranslation()
 
   return (
     <div className="min-h-screen bg-gray-50 flex">
@@ -17,7 +19,7 @@ export function AppLayout() {
           <Outlet />
         </main>
         <footer className="h-8 border-t border-gray-200 bg-white flex items-center justify-center px-4 text-xs text-gray-400">
-          Powered by <a href="https://www.codeprophet.tech" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:text-blue-800 ml-1">Code Prophet Inc.</a>
+          {t('layout.footer')}
         </footer>
       </div>
     </div>

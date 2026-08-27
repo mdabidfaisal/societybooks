@@ -5,6 +5,7 @@ import { Input } from '../ui/Input'
 import { Select } from '../ui/Select'
 import { useAuth } from '../../hooks/useAuth'
 import { formatCurrency } from '../../lib/utils'
+import { useTranslation } from 'react-i18next'
 
 const PAYMENT_METHODS = [
   { value: 'cash', label: 'Cash' },
@@ -22,12 +23,12 @@ interface RepaymentFormProps {
   principalAmount: number
   profitAmount: number
   loanId: string
-  loanNumber?: string
   onSuccess: () => void
 }
 
-export function RepaymentForm({ emiId, installmentNo, totalAmount, paidAmount, principalAmount, profitAmount, loanId, loanNumber, onSuccess }: RepaymentFormProps) {
+export function RepaymentForm({ emiId, installmentNo, totalAmount, paidAmount, principalAmount, profitAmount, loanId, onSuccess }: RepaymentFormProps) {
   const { samitiId } = useAuth()
+  const { t } = useTranslation()
   const [amount, setAmount] = useState<number>(totalAmount - paidAmount)
   const [paymentMethod, setPaymentMethod] = useState<string>('cash')
   const [loading, setLoading] = useState(false)
@@ -54,7 +55,7 @@ export function RepaymentForm({ emiId, installmentNo, totalAmount, paidAmount, p
       .eq('id', emiId)
 
     if (emiError) {
-      alert('Repayment failed: ' + emiError.message)
+      alert(t('loans.repaymentFailed', { message: emiError.message }))
       setLoading(false)
       return
     }
@@ -77,37 +78,6 @@ export function RepaymentForm({ emiId, installmentNo, totalAmount, paidAmount, p
       performed_by: user?.id,
     } as never)
 
-    // Auto-journalize repayment
-    if (samitiId) {
-      const { autoJournalize } = await import('../../lib/accounting')
-      const desc = `Loan repayment ${loanNumber ? `(${loanNumber}) ` : ''}EMI #${installmentNo}`
-
-      if (principalPaid > 0) {
-        await autoJournalize({
-          samitiId,
-          transactionType: 'loan_repayment_principal',
-          description: `${desc} - principal`,
-          amount: principalPaid,
-          referenceId: loanId,
-          referenceTable: 'loans',
-          performedBy: user?.id || '',
-          entryDate: new Date().toISOString().split('T')[0],
-        })
-      }
-      if (profitPaid > 0) {
-        await autoJournalize({
-          samitiId,
-          transactionType: 'loan_repayment_profit',
-          description: `${desc} - profit`,
-          amount: profitPaid,
-          referenceId: loanId,
-          referenceTable: 'loans',
-          performedBy: user?.id || '',
-          entryDate: new Date().toISOString().split('T')[0],
-        })
-      }
-    }
-
     if (newStatus === 'paid') {
       const { data: allEmis } = await supabase
         .from('loan_emi_schedule')
@@ -128,7 +98,7 @@ export function RepaymentForm({ emiId, installmentNo, totalAmount, paidAmount, p
 
   return (
     <form onSubmit={handleSubmit} className="flex items-center gap-2 flex-wrap">
-      <span className="text-sm text-gray-500 whitespace-nowrap">Installment #{installmentNo}:</span>
+      <span className="text-sm text-gray-500 whitespace-nowrap">{t('loans.installmentColon', { no: installmentNo })}</span>
       <Input
         type="number"
         step="0.01"
@@ -138,14 +108,14 @@ export function RepaymentForm({ emiId, installmentNo, totalAmount, paidAmount, p
         className="w-28"
       />
       <Select
-        options={PAYMENT_METHODS}
+        options={PAYMENT_METHODS.map((m) => ({ value: m.value, label: t(`savings.${m.value}`) }))}
         value={paymentMethod}
         onChange={(e) => setPaymentMethod(e.target.value)}
         className="w-24"
       />
-      <span className="text-xs text-gray-400">Due: {formatCurrency(totalAmount)}</span>
+      <span className="text-xs text-gray-400">{t('loans.dueLabel', { amount: formatCurrency(totalAmount) })}</span>
       <Button type="submit" size="sm" loading={loading} disabled={amount <= 0 || amount > remaining}>
-        Pay
+        {t('loans.pay')}
       </Button>
     </form>
   )

@@ -8,22 +8,30 @@ import { Switch } from '../ui/Switch'
 import { Spinner } from '../ui/Spinner'
 import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../hooks/useAuth'
+import { useTranslation } from 'react-i18next'
 
-const samitiSchema = z.object({
-  samiti_name: z.string().min(1, 'Name is required'),
-  shares_enabled: z.boolean(),
-  share_value: z.coerce.number().min(0),
-  address: z.string().optional(),
-  phone: z.string().optional(),
-})
-
-type SamitiFormData = z.infer<typeof samitiSchema>
+type SamitiFormData = {
+  samiti_name: string
+  shares_enabled: boolean
+  share_value: number
+  address?: string
+  phone?: string
+}
 
 export function SamitiConfigForm() {
   const { samitiId } = useAuth()
+  const { t } = useTranslation()
   const [loading, setLoading] = useState(true)
   const [success, setSuccess] = useState(false)
   const [fetchError, setFetchError] = useState<string | null>(null)
+
+  const samitiSchema = z.object({
+    samiti_name: z.string().min(1, t('settings.nameRequired')),
+    shares_enabled: z.boolean(),
+    share_value: z.coerce.number().min(0),
+    address: z.string().optional(),
+    phone: z.string().optional(),
+  })
 
   const { register, handleSubmit, reset, watch, setValue, formState: { errors, isSubmitting, isDirty } } = useForm<SamitiFormData>({
     resolver: zodResolver(samitiSchema),
@@ -74,23 +82,23 @@ export function SamitiConfigForm() {
         <div className="bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg p-3">{fetchError}</div>
       )}
       {success && (
-        <div className="bg-green-50 border border-green-200 text-green-700 text-sm rounded-lg p-3">Settings saved.</div>
+        <div className="bg-green-50 border border-green-200 text-green-700 text-sm rounded-lg p-3">{t('settings.saveSuccess')}</div>
       )}
-      <Input id="samiti_name" label="Samiti Name" {...register('samiti_name')} error={errors.samiti_name?.message} />
+      <Input id="samiti_name" label={t('settings.samitiName')} {...register('samiti_name')} error={errors.samiti_name?.message} />
       <div className="flex items-center justify-between py-2">
         <div>
-          <label className="font-medium text-sm text-gray-700">Enable Shares</label>
-          <p className="text-xs text-gray-500">Allow members to purchase share capital</p>
+          <label className="font-medium text-sm text-gray-700">{t('settings.enableShares')}</label>
+          <p className="text-xs text-gray-500">{t('settings.shareCapital')}</p>
         </div>
         <Switch checked={sharesEnabled} onChange={(v) => setValue('shares_enabled', v)} />
       </div>
       {sharesEnabled && (
-        <Input id="share_value" label="Share Value (৳)" type="number" step="0.01" {...register('share_value')} error={errors.share_value?.message} />
+        <Input id="share_value" label={t('settings.shareValueLabel')} type="number" step="0.01" {...register('share_value')} error={errors.share_value?.message} />
       )}
-      <Input id="address" label="Address" {...register('address')} />
-      <Input id="phone" label="Phone" {...register('phone')} />
+      <Input id="address" label={t('common.address')} {...register('address')} />
+      <Input id="phone" label={t('common.phone')} {...register('phone')} />
       <div className="flex justify-end pt-2">
-        <Button type="submit" loading={isSubmitting} disabled={!isDirty}>Save</Button>
+        <Button type="submit" loading={isSubmitting} disabled={!isDirty}>{t('common.save')}</Button>
       </div>
     </form>
   )

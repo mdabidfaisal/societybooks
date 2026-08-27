@@ -5,13 +5,16 @@ import { Button } from '../components/ui/Button'
 import { Input } from '../components/ui/Input'
 import { Spinner } from '../components/ui/Spinner'
 import { RefreshButton } from '../components/ui/RefreshButton'
+import { ReportExportButtons } from '../components/reports/ReportExportButtons'
 import { getProfitAndLoss, getIncomeExpenseTransactions, type IncomeExpenseLine, type TransactionDetail } from '../lib/accounting'
 import { useAuth } from '../hooks/useAuth'
 import { formatCurrency, formatDate } from '../lib/utils'
+import { useTranslation } from 'react-i18next'
 import { TrendingUp, TrendingDown, DollarSign, AlertCircle, Search, ChevronDown, ChevronUp } from 'lucide-react'
 
 export default function IncomeExpensePage() {
   const { samitiId } = useAuth()
+  const { t } = useTranslation()
   const currentYear = new Date().getFullYear()
   const [fromDate, setFromDate] = useState(`${currentYear}-01-01`)
   const [toDate, setToDate] = useState(`${currentYear}-12-31`)
@@ -43,7 +46,7 @@ export default function IncomeExpensePage() {
       setTransactions(txs)
     } catch (err) {
       console.error(err)
-      setError(err instanceof Error ? err.message : 'Failed to load report')
+      setError(err instanceof Error ? err.message : t('reports.loadFailed'))
     }
     setLoading(false)
   }, [samitiId, fromDate, toDate])
@@ -76,8 +79,28 @@ export default function IncomeExpensePage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-gray-900">Income & Expense Statement</h1>
-        <RefreshButton onRefresh={loadReport} />
+        <h1 className="text-2xl font-bold text-gray-900">{t('accounting.incomeStatement')}</h1>
+        <div className="flex items-center gap-2">
+          <ReportExportButtons
+            filename={`income-expense-${fromDate}-${toDate}`}
+            title={t('accounting.incomeStatement')}
+            subtitle={t('accounting.reportPeriodRange', { from: fromDate, to: toDate })}
+            headers={[t('common.date'), t('accounting.description'), t('accounting.account'), t('common.type'), t('common.amount')]}
+            rows={filteredTx.map((tx) => [
+              formatDate(tx.date),
+              tx.description,
+              `${tx.account_name} (${tx.account_code})`,
+              tx.type,
+              `${tx.type === 'income' ? '+' : '-'}${formatCurrency(tx.amount)}`,
+            ])}
+            totals={[
+              { label: t('accounting.totalIncome'), value: formatCurrency(totalIncome) },
+              { label: t('accounting.totalExpense'), value: formatCurrency(totalExpenses) },
+              { label: t('accounting.netProfitLoss'), value: formatCurrency(netProfit) },
+            ]}
+          />
+          <RefreshButton onRefresh={loadReport} />
+        </div>
       </div>
 
       {/* Date filter */}
@@ -85,7 +108,7 @@ export default function IncomeExpensePage() {
         <div className="flex items-end gap-3 flex-wrap">
           <Input
             id="from"
-            label="From Date"
+            label={t('reports.fromDate')}
             type="date"
             value={fromDate}
             onChange={(e) => setFromDate(e.target.value)}
@@ -93,13 +116,13 @@ export default function IncomeExpensePage() {
           />
           <Input
             id="to"
-            label="To Date"
+            label={t('reports.toDate')}
             type="date"
             value={toDate}
             onChange={(e) => setToDate(e.target.value)}
             className="w-44"
           />
-          <Button onClick={loadReport} loading={loading}>Run Report</Button>
+          <Button onClick={loadReport} loading={loading}>{t('accounting.runReport')}</Button>
         </div>
       </Card>
 
@@ -120,7 +143,7 @@ export default function IncomeExpensePage() {
               <div className="flex items-center gap-3">
                 <TrendingUp className="h-8 w-8 text-green-500" />
                 <div>
-                  <p className="text-sm text-gray-500">Total Income</p>
+                  <p className="text-sm text-gray-500">{t('accounting.totalIncome')}</p>
                   <p className="text-2xl font-bold text-green-600">{formatCurrency(totalIncome)}</p>
                 </div>
               </div>
@@ -129,7 +152,7 @@ export default function IncomeExpensePage() {
               <div className="flex items-center gap-3">
                 <TrendingDown className="h-8 w-8 text-red-500" />
                 <div>
-                  <p className="text-sm text-gray-500">Total Expenses</p>
+                  <p className="text-sm text-gray-500">{t('accounting.totalExpense')}</p>
                   <p className="text-2xl font-bold text-red-600">{formatCurrency(totalExpenses)}</p>
                 </div>
               </div>
@@ -138,7 +161,7 @@ export default function IncomeExpensePage() {
               <div className="flex items-center gap-3">
                 <DollarSign className={`h-8 w-8 ${netProfit >= 0 ? 'text-blue-500' : 'text-red-500'}`} />
                 <div>
-                  <p className="text-sm text-gray-500">Net Profit / Loss</p>
+                  <p className="text-sm text-gray-500">{t('accounting.netProfitLoss')}</p>
                   <p className={`text-2xl font-bold ${netProfit >= 0 ? 'text-blue-600' : 'text-red-600'}`}>
                     {formatCurrency(netProfit)}
                   </p>
@@ -149,9 +172,9 @@ export default function IncomeExpensePage() {
 
           {/* ── Per-Account Breakdown with Transaction Drill-down ── */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <Card title={`Income (${income.length} accounts, ${transactions.filter(t => t.type === 'income').length} entries)`}>
+            <Card title={t('accounting.incomeAccountsCount', { accounts: income.length, entries: transactions.filter(t => t.type === 'income').length })}>
               {income.length === 0 ? (
-                <p className="text-sm text-gray-500">No income recorded.</p>
+                <p className="text-sm text-gray-500">{t('accounting.noIncomeRecorded')}</p>
               ) : (
                 <div className="space-y-1 text-sm">
                   {income.map((i) => {
@@ -183,7 +206,7 @@ export default function IncomeExpensePage() {
                               </div>
                             ))}
                             <div className="flex justify-between text-xs font-semibold text-green-700 border-t border-green-200 pt-0.5 mt-0.5">
-                              <span>Total</span>
+                              <span>{t('common.total')}</span>
                               <span>{formatCurrency(i.amount)}</span>
                             </div>
                           </div>
@@ -192,16 +215,16 @@ export default function IncomeExpensePage() {
                     )
                   })}
                   <div className="border-t pt-2 flex justify-between font-semibold">
-                    <span>Total Income</span>
+                    <span>{t('accounting.totalIncome')}</span>
                     <span className="text-green-600">{formatCurrency(totalIncome)}</span>
                   </div>
                 </div>
               )}
             </Card>
 
-            <Card title={`Expenses (${expenses.length} accounts, ${transactions.filter(t => t.type === 'expense').length} entries)`}>
+            <Card title={t('accounting.expenseAccountsCount', { accounts: expenses.length, entries: transactions.filter(t => t.type === 'expense').length })}>
               {expenses.length === 0 ? (
-                <p className="text-sm text-gray-500">No expenses recorded.</p>
+                <p className="text-sm text-gray-500">{t('accounting.noExpensesRecorded')}</p>
               ) : (
                 <div className="space-y-1 text-sm">
                   {expenses.map((e) => {
@@ -233,7 +256,7 @@ export default function IncomeExpensePage() {
                               </div>
                             ))}
                             <div className="flex justify-between text-xs font-semibold text-red-700 border-t border-red-200 pt-0.5 mt-0.5">
-                              <span>Total</span>
+                              <span>{t('common.total')}</span>
                               <span>{formatCurrency(e.amount)}</span>
                             </div>
                           </div>
@@ -242,7 +265,7 @@ export default function IncomeExpensePage() {
                     )
                   })}
                   <div className="border-t pt-2 flex justify-between font-semibold">
-                    <span>Total Expenses</span>
+                    <span>{t('accounting.totalExpense')}</span>
                     <span className="text-red-600">{formatCurrency(totalExpenses)}</span>
                   </div>
                 </div>
@@ -254,12 +277,12 @@ export default function IncomeExpensePage() {
           <Card
             title={
               <div className="flex items-center justify-between w-full">
-                <span>All Transactions ({transactions.length})</span>
+                <span>{t('accounting.allTransactions')} ({transactions.length})</span>
                 <div className="relative w-64">
                   <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
                   <input
                     type="text"
-                    placeholder="Search transactions..."
+                    placeholder={t('accounting.searchTransactionsPlaceholder')}
                     value={txSearch}
                     onChange={(e) => setTxSearch(e.target.value)}
                     className="w-full pl-8 pr-3 py-1.5 text-xs border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500"
@@ -269,17 +292,17 @@ export default function IncomeExpensePage() {
             }
           >
             {filteredTx.length === 0 ? (
-              <p className="text-sm text-gray-500 text-center py-4">No transactions found.</p>
+              <p className="text-sm text-gray-500 text-center py-4">{t('accounting.noTransactionsFound')}</p>
             ) : (
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b text-left text-xs font-medium text-gray-500 uppercase">
-                      <th className="pb-3 pr-4">Date</th>
-                      <th className="pb-3 pr-4">Description</th>
-                      <th className="pb-3 pr-4">Account</th>
-                      <th className="pb-3 pr-4">Type</th>
-                      <th className="pb-3 pr-4 text-right">Amount</th>
+                      <th className="pb-3 pr-4">{t('common.date')}</th>
+                      <th className="pb-3 pr-4">{t('accounting.description')}</th>
+                      <th className="pb-3 pr-4">{t('accounting.account')}</th>
+                      <th className="pb-3 pr-4">{t('common.type')}</th>
+                      <th className="pb-3 pr-4 text-right">{t('common.amount')}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -291,7 +314,7 @@ export default function IncomeExpensePage() {
                           {tx.account_name} <span className="text-gray-400 font-mono text-xs">({tx.account_code})</span>
                         </td>
                         <td className="py-2.5 pr-4">
-                          <Badge variant={tx.type === 'income' ? 'success' : 'danger'}>{tx.type}</Badge>
+                          <Badge variant={tx.type === 'income' ? 'success' : 'danger'}>{t(`txnType.${tx.type}`)}</Badge>
                         </td>
                         <td className={`py-2.5 pr-4 text-right font-medium ${tx.type === 'income' ? 'text-green-600' : 'text-red-600'}`}>
                           {tx.type === 'income' ? '+' : '-'}{formatCurrency(tx.amount)}
@@ -301,7 +324,7 @@ export default function IncomeExpensePage() {
                   </tbody>
                   <tfoot>
                     <tr className="border-t font-semibold">
-                      <td className="pt-3 pr-4" colSpan={4}>Total Income / Expense</td>
+                      <td className="pt-3 pr-4" colSpan={4}>{t('accounting.totalIncomeExpense')}</td>
                       <td className="pt-3 pr-4 text-right">
                         <span className="text-green-600">{formatCurrency(totalIncome)}</span>
                         {' / '}

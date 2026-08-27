@@ -7,7 +7,9 @@ import { Button } from '../components/ui/Button'
 import { Spinner } from '../components/ui/Spinner'
 import { EmptyState } from '../components/ui/EmptyState'
 import { RefreshButton } from '../components/ui/RefreshButton'
-import { formatCurrency, formatDate } from '../lib/utils'
+import { ReportExportButtons } from '../components/reports/ReportExportButtons'
+import { formatCurrency } from '../lib/utils'
+import { useTranslation } from 'react-i18next'
 import { Scale, ChevronDown, ChevronUp } from 'lucide-react'
 
 interface AccountBalance {
@@ -32,6 +34,7 @@ interface BalanceSheetData {
 
 export default function BalanceSheetPage() {
   const { samitiId } = useAuth()
+  const { t } = useTranslation()
   const today = new Date().toISOString().split('T')[0]
   const [asOfDate, setAsOfDate] = useState(today)
   const [data, setData] = useState<BalanceSheetData | null>(null)
@@ -196,25 +199,48 @@ export default function BalanceSheetPage() {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-gray-900">Balance Sheet</h1>
-        <RefreshButton onRefresh={loadBalanceSheet} />
+        <h1 className="text-2xl font-bold text-gray-900">{t('accounting.balanceSheet')}</h1>
+        <div className="flex items-center gap-2">
+          {data && (
+            <ReportExportButtons
+              filename={`balance-sheet-${asOfDate}`}
+              title={t('accounting.balanceSheet')}
+              subtitle={`${t('accounting.asOfDate')}: ${asOfDate}`}
+              headers={[t('membership.section'), t('accounting.account'), t('accounting.accountCode'), t('common.amount')]}
+              rows={[
+                ...data.assets.map((a) => [t('accounting.assetsSection'), a.accountName, a.accountCode, formatCurrency(a.balance)]),
+                [t('accounting.assetsSection'), t('accounting.totalAssets'), '', formatCurrency(data.totalAssets)],
+                ...data.liabilities.map((l) => [t('accounting.liabilitiesSection'), l.accountName, l.accountCode, formatCurrency(l.balance)]),
+                [t('accounting.liabilitiesSection'), t('accounting.totalLiabilities'), '', formatCurrency(data.totalLiabilities)],
+                ...data.equity.map((e) => [t('accounting.equitySection'), e.accountName, e.accountCode, formatCurrency(e.balance)]),
+                [t('accounting.equitySection'), t('accounting.retainedEarnings'), '', formatCurrency(data.retainedEarnings)],
+                [t('accounting.equitySection'), t('accounting.totalEquity'), '', formatCurrency(data.totalEquity)],
+              ]}
+              totals={[
+                { label: t('accounting.totalAssets'), value: formatCurrency(data.totalAssets) },
+                { label: t('accounting.totalLiabilitiesEquity'), value: formatCurrency(data.totalLiabilities + data.totalEquity) },
+              ]}
+            />
+          )}
+          <RefreshButton onRefresh={loadBalanceSheet} />
+        </div>
       </div>
 
       {/* As-of date filter */}
       <Card>
         <div className="flex items-end gap-4 flex-wrap">
           <div>
-            <label className="block text-xs font-medium text-gray-500 mb-1">As of Date</label>
+            <label className="block text-xs font-medium text-gray-500 mb-1">{t('accounting.asOfDate')}</label>
             <Input type="date" value={asOfDate} onChange={(e) => setAsOfDate(e.target.value)} />
           </div>
-          <Button onClick={loadBalanceSheet} variant="secondary">Update</Button>
+          <Button onClick={loadBalanceSheet} variant="secondary">{t('accounting.update')}</Button>
         </div>
       </Card>
 
       {!data || (data.assets.length === 0 && data.liabilities.length === 0 && data.equity.length === 0) ? (
         <EmptyState
-          title="No balance sheet data"
-          description="No accounts or journal entries found. Add accounts and post transactions first."
+          title={t('accounting.noBalanceSheetData')}
+          description={t('accounting.noBalanceSheetDataDesc')}
         />
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -224,7 +250,7 @@ export default function BalanceSheetPage() {
               className="bg-green-50 px-4 py-3 border-b border-gray-200 flex items-center justify-between cursor-pointer"
               onClick={() => toggleSection('assets')}
             >
-              <h2 className="text-sm font-bold text-green-800 uppercase tracking-wide">Assets</h2>
+              <h2 className="text-sm font-bold text-green-800 uppercase tracking-wide">{t('accounting.assetsSection')}</h2>
               {collapsedSections.has('assets') ? <ChevronDown className="h-4 w-4 text-green-600" /> : <ChevronUp className="h-4 w-4 text-green-600" />}
             </div>
             {!collapsedSections.has('assets') && (
@@ -232,8 +258,8 @@ export default function BalanceSheetPage() {
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="bg-gray-50">
-                      <th className="text-left py-2 px-4 font-medium text-gray-500 text-xs uppercase tracking-wider">Account</th>
-                      <th className="text-right py-2 px-4 font-medium text-gray-500 text-xs uppercase tracking-wider">Amount (৳)</th>
+                      <th className="text-left py-2 px-4 font-medium text-gray-500 text-xs uppercase tracking-wider">{t('accounting.account')}</th>
+                      <th className="text-right py-2 px-4 font-medium text-gray-500 text-xs uppercase tracking-wider">{t('accounting.amountUnit')}</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-100">
@@ -251,7 +277,7 @@ export default function BalanceSheetPage() {
                   </tbody>
                 </table>
                 <div className="bg-green-100 px-4 py-3 flex items-center justify-between border-t-2 border-green-300">
-                  <span className="text-sm font-bold text-green-900">Total Assets</span>
+                  <span className="text-sm font-bold text-green-900">{t('accounting.totalAssets')}</span>
                   <span className="text-lg font-bold text-green-900">{formatCurrency(data.totalAssets)}</span>
                 </div>
               </>
@@ -266,7 +292,7 @@ export default function BalanceSheetPage() {
                 className="bg-orange-50 px-4 py-3 border-b border-gray-200 flex items-center justify-between cursor-pointer"
                 onClick={() => toggleSection('liabilities')}
               >
-                <h2 className="text-sm font-bold text-orange-800 uppercase tracking-wide">Liabilities</h2>
+                <h2 className="text-sm font-bold text-orange-800 uppercase tracking-wide">{t('accounting.liabilitiesSection')}</h2>
                 {collapsedSections.has('liabilities') ? <ChevronDown className="h-4 w-4 text-orange-600" /> : <ChevronUp className="h-4 w-4 text-orange-600" />}
               </div>
               {!collapsedSections.has('liabilities') && (
@@ -274,8 +300,8 @@ export default function BalanceSheetPage() {
                   <table className="w-full text-sm">
                     <thead>
                       <tr className="bg-gray-50">
-                        <th className="text-left py-2 px-4 font-medium text-gray-500 text-xs uppercase tracking-wider">Account</th>
-                        <th className="text-right py-2 px-4 font-medium text-gray-500 text-xs uppercase tracking-wider">Amount (৳)</th>
+                        <th className="text-left py-2 px-4 font-medium text-gray-500 text-xs uppercase tracking-wider">{t('accounting.account')}</th>
+                        <th className="text-right py-2 px-4 font-medium text-gray-500 text-xs uppercase tracking-wider">{t('accounting.amountUnit')}</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-100">
@@ -293,7 +319,7 @@ export default function BalanceSheetPage() {
                     </tbody>
                   </table>
                   <div className="bg-orange-100 px-4 py-3 flex items-center justify-between border-t-2 border-orange-300">
-                    <span className="text-sm font-bold text-orange-900">Total Liabilities</span>
+                    <span className="text-sm font-bold text-orange-900">{t('accounting.totalLiabilities')}</span>
                     <span className="text-lg font-bold text-orange-900">{formatCurrency(data.totalLiabilities)}</span>
                   </div>
                 </>
@@ -306,7 +332,7 @@ export default function BalanceSheetPage() {
                 className="bg-blue-50 px-4 py-3 border-b border-gray-200 flex items-center justify-between cursor-pointer"
                 onClick={() => toggleSection('equity')}
               >
-                <h2 className="text-sm font-bold text-blue-800 uppercase tracking-wide">Equity</h2>
+                <h2 className="text-sm font-bold text-blue-800 uppercase tracking-wide">{t('accounting.equitySection')}</h2>
                 {collapsedSections.has('equity') ? <ChevronDown className="h-4 w-4 text-blue-600" /> : <ChevronUp className="h-4 w-4 text-blue-600" />}
               </div>
               {!collapsedSections.has('equity') && (
@@ -314,8 +340,8 @@ export default function BalanceSheetPage() {
                   <table className="w-full text-sm">
                     <thead>
                       <tr className="bg-gray-50">
-                        <th className="text-left py-2 px-4 font-medium text-gray-500 text-xs uppercase tracking-wider">Account</th>
-                        <th className="text-right py-2 px-4 font-medium text-gray-500 text-xs uppercase tracking-wider">Amount (৳)</th>
+                        <th className="text-left py-2 px-4 font-medium text-gray-500 text-xs uppercase tracking-wider">{t('accounting.account')}</th>
+                        <th className="text-right py-2 px-4 font-medium text-gray-500 text-xs uppercase tracking-wider">{t('accounting.amountUnit')}</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-100">
@@ -333,8 +359,8 @@ export default function BalanceSheetPage() {
                       {/* Retained Earnings */}
                       <tr className="bg-blue-50/50">
                         <td className="py-2 px-4">
-                          <span className="font-medium text-gray-900">Retained Earnings</span>
-                          <span className="text-gray-400 text-xs ml-2">(Net income − Expenses)</span>
+                          <span className="font-medium text-gray-900">{t('accounting.retainedEarnings')}</span>
+                          <span className="text-gray-400 text-xs ml-2">{t('accounting.retainedEarningsNote')}</span>
                         </td>
                         <td className="py-2 px-4 text-right font-medium text-gray-900">
                           {formatCurrency(data.retainedEarnings)}
@@ -343,7 +369,7 @@ export default function BalanceSheetPage() {
                     </tbody>
                   </table>
                   <div className="bg-blue-100 px-4 py-3 flex items-center justify-between border-t-2 border-blue-300">
-                    <span className="text-sm font-bold text-blue-900">Total Equity</span>
+                    <span className="text-sm font-bold text-blue-900">{t('accounting.totalEquity')}</span>
                     <span className="text-lg font-bold text-blue-900">{formatCurrency(data.totalEquity)}</span>
                   </div>
                 </>
@@ -358,30 +384,30 @@ export default function BalanceSheetPage() {
         <div className="bg-white rounded-lg border border-gray-200 p-4">
           <div className="flex items-center gap-2 mb-3">
             <Scale className="h-5 w-5 text-gray-500" />
-            <span className="font-medium text-gray-900">Balance Sheet Check</span>
-            <span className="text-xs text-gray-400">Accounting equation: Assets = Liabilities + Equity</span>
+            <span className="font-medium text-gray-900">{t('accounting.balanceSheetCheck')}</span>
+            <span className="text-xs text-gray-400">{t('accounting.accountingEquation')}</span>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="bg-green-50 rounded-lg p-3 text-center">
-              <p className="text-xs font-medium text-green-700 uppercase tracking-wide">Total Assets</p>
+              <p className="text-xs font-medium text-green-700 uppercase tracking-wide">{t('accounting.totalAssets')}</p>
               <p className="text-xl font-bold text-green-900 mt-1">{formatCurrency(data.totalAssets)}</p>
             </div>
             <div className="bg-orange-50 rounded-lg p-3 text-center">
-              <p className="text-xs font-medium text-orange-700 uppercase tracking-wide">Total Liabilities</p>
+              <p className="text-xs font-medium text-orange-700 uppercase tracking-wide">{t('accounting.totalLiabilities')}</p>
               <p className="text-xl font-bold text-orange-900 mt-1">{formatCurrency(data.totalLiabilities)}</p>
             </div>
             <div className="bg-blue-50 rounded-lg p-3 text-center">
-              <p className="text-xs font-medium text-blue-700 uppercase tracking-wide">Total Liabilities + Equity</p>
+              <p className="text-xs font-medium text-blue-700 uppercase tracking-wide">{t('accounting.totalLiabilitiesEquity')}</p>
               <p className="text-xl font-bold text-blue-900 mt-1">{formatCurrency(data.totalLiabilities + data.totalEquity)}</p>
             </div>
           </div>
           {Math.abs(data.totalAssets - (data.totalLiabilities + data.totalEquity)) > 0.01 ? (
             <div className="mt-3 bg-red-50 border border-red-200 rounded-lg p-3 text-sm text-red-700">
-              Balance sheet is out of balance by {formatCurrency(Math.abs(data.totalAssets - (data.totalLiabilities + data.totalEquity)))}
+              {t('accounting.outOfBalance', { amount: formatCurrency(Math.abs(data.totalAssets - (data.totalLiabilities + data.totalEquity))) })}
             </div>
           ) : (
             <div className="mt-3 bg-green-50 border border-green-200 rounded-lg p-3 text-sm text-green-700 text-center font-medium">
-              ✓ Balance Sheet is in balance
+              {t('accounting.inBalance')}
             </div>
           )}
         </div>

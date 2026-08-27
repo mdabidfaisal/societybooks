@@ -6,10 +6,11 @@ import { Input } from '../ui/Input'
 import { useUIStore } from '../../store/uiStore'
 import { supabaseAdmin } from '../../lib/supabase-admin'
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 
 const loginSchema = z.object({
-  email: z.string().email('Valid email is required'),
-  password: z.string().min(6, 'Password must be at least 6 characters'),
+  email: z.string().email(),
+  password: z.string().min(6),
 })
 
 type LoginFormData = z.infer<typeof loginSchema>
@@ -23,7 +24,13 @@ interface CreateLoginFormProps {
 
 export function CreateLoginForm({ memberId, samitiId, name, onSuccess }: CreateLoginFormProps) {
   const closeModal = useUIStore((s) => s.closeModal)
+  const { t } = useTranslation()
   const [apiError, setApiError] = useState<string | null>(null)
+
+  const loginSchema = z.object({
+    email: z.string().email(t('membership.validEmailRequired')),
+    password: z.string().min(6, t('membership.passwordMinChars')),
+  })
 
   const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
@@ -63,7 +70,7 @@ export function CreateLoginForm({ memberId, samitiId, name, onSuccess }: CreateL
       )}
       <Input
         id="email"
-        label="Email (login ID)"
+        label={t('membership.emailLoginId')}
         type="email"
         placeholder="member@samiti.test"
         {...register('email')}
@@ -71,18 +78,18 @@ export function CreateLoginForm({ memberId, samitiId, name, onSuccess }: CreateL
       />
       <Input
         id="password"
-        label="Password"
+        label={t('auth.password')}
         type="text"
-        placeholder="Min 6 characters"
+        placeholder={t('membership.min6Characters')}
         {...register('password')}
         error={errors.password?.message}
       />
       <p className="text-xs text-gray-500">
-        After creation, the member can log in with these credentials.
+        {t('membership.loginCredentialsHint')}
       </p>
       <div className="flex justify-end gap-2 pt-2">
-        <Button type="button" variant="secondary" onClick={closeModal}>Cancel</Button>
-        <Button type="submit" loading={isSubmitting}>Create Login</Button>
+        <Button type="button" variant="secondary" onClick={closeModal}>{t('common.cancel')}</Button>
+        <Button type="submit" loading={isSubmitting}>{t('membership.createLogin')}</Button>
       </div>
     </form>
   )

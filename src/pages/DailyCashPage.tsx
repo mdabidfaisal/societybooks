@@ -7,11 +7,14 @@ import { Button } from '../components/ui/Button'
 import { Spinner } from '../components/ui/Spinner'
 import { EmptyState } from '../components/ui/EmptyState'
 import { RefreshButton } from '../components/ui/RefreshButton'
+import { ReportExportButtons } from '../components/reports/ReportExportButtons'
 import { formatCurrency } from '../lib/utils'
+import { useTranslation } from 'react-i18next'
 import { DollarSign, ArrowDownCircle, ArrowUpCircle, TrendingUp } from 'lucide-react'
 
 export default function DailyCashPage() {
   const { samitiId } = useAuth()
+  const { t } = useTranslation()
   const today = new Date().toISOString().split('T')[0]
   const [date, setDate] = useState(today)
   const [loading, setLoading] = useState(true)
@@ -120,65 +123,82 @@ export default function DailyCashPage() {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-gray-900">Daily Cash Summary</h1>
-        <RefreshButton onRefresh={loadData} />
+        <h1 className="text-2xl font-bold text-gray-900">{t('dailyCash.title')}</h1>
+        <div className="flex items-center gap-2">
+          <ReportExportButtons
+            filename={`daily-cash-${date}`}
+            title={t('dailyCash.title')}
+            subtitle={t('dailyCash.exportDate', { date })}
+            headers={[t('dailyCash.description'), t('dailyCash.debitIn'), t('dailyCash.creditOut')]}
+            rows={transactions.map((t) => [t.desc, t.debit > 0 ? formatCurrency(t.debit) : '', t.credit > 0 ? formatCurrency(t.credit) : ''])}
+            totals={[
+              { label: t('dailyCash.cashDeposits'), value: formatCurrency(deposits) },
+              { label: t('dailyCash.cashWithdrawals'), value: formatCurrency(withdrawals) },
+              { label: t('dailyCash.profitCredited'), value: formatCurrency(profitCredited) },
+              { label: t('dailyCash.loanDisbursed'), value: formatCurrency(loanDisbursements) },
+              { label: t('dailyCash.loanRepayments'), value: formatCurrency(loanRepayments) },
+              { label: t('dailyCash.netCashFlow'), value: formatCurrency(netCashFlow) },
+            ]}
+          />
+          <RefreshButton onRefresh={loadData} />
+        </div>
       </div>
 
       <Card>
         <div className="flex items-end gap-4">
           <div>
-            <label className="block text-xs font-medium text-gray-500 mb-1">Date</label>
+            <label className="block text-xs font-medium text-gray-500 mb-1">{t('dailyCash.date')}</label>
             <Input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
           </div>
-          <Button onClick={loadData} variant="secondary">Load</Button>
+          <Button onClick={loadData} variant="secondary">{t('dailyCash.load')}</Button>
         </div>
       </Card>
 
       {loading ? (
         <Spinner size="lg" />
       ) : transactions.length === 0 ? (
-        <EmptyState title="No cash transactions" description={`No entries affecting the Cash account on ${date}.`} />
+        <EmptyState title={t('dailyCash.noTxTitle')} description={t('dailyCash.noTxDesc', { date })} />
       ) : (
         <>
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-            <Card title="Cash Deposits" className="border-l-4 border-l-green-500">
+            <Card title={t('dailyCash.cashDeposits')} className="border-l-4 border-l-green-500">
               <p className="text-2xl font-bold text-green-700">{formatCurrency(deposits)}</p>
             </Card>
-            <Card title="Cash Withdrawals" className="border-l-4 border-l-red-500">
+            <Card title={t('dailyCash.cashWithdrawals')} className="border-l-4 border-l-red-500">
               <p className="text-2xl font-bold text-red-700">{formatCurrency(withdrawals)}</p>
             </Card>
-            <Card title="Profit Credited" className="border-l-4 border-l-blue-500">
+            <Card title={t('dailyCash.profitCredited')} className="border-l-4 border-l-blue-500">
               <p className="text-2xl font-bold text-blue-700">{formatCurrency(profitCredited)}</p>
             </Card>
-            <Card title="Loan Disbursed" className="border-l-4 border-l-orange-500">
+            <Card title={t('dailyCash.loanDisbursed')} className="border-l-4 border-l-orange-500">
               <p className="text-2xl font-bold text-orange-700">{formatCurrency(loanDisbursements)}</p>
             </Card>
-            <Card title="Loan Repayments" className="border-l-4 border-l-purple-500">
+            <Card title={t('dailyCash.loanRepayments')} className="border-l-4 border-l-purple-500">
               <p className="text-2xl font-bold text-purple-700">{formatCurrency(loanRepayments)}</p>
             </Card>
-            <Card title="Net Cash Flow" className={`border-l-4 ${netCashFlow >= 0 ? 'border-l-emerald-500' : 'border-l-red-500'}`}>
+            <Card title={t('dailyCash.netCashFlow')} className={`border-l-4 ${netCashFlow >= 0 ? 'border-l-emerald-500' : 'border-l-red-500'}`}>
               <p className={`text-2xl font-bold ${netCashFlow >= 0 ? 'text-emerald-700' : 'text-red-700'}`}>
                 {formatCurrency(netCashFlow)}
               </p>
             </Card>
           </div>
 
-          <Card title={`Transaction Detail — ${date}`}>
+          <Card title={t('dailyCash.transactionDetail', { date })}>
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
                   <tr className="bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase">
-                    <th className="py-2 px-3">Description</th>
-                    <th className="py-2 px-3 text-right">Debit (In)</th>
-                    <th className="py-2 px-3 text-right">Credit (Out)</th>
+                    <th className="py-2 px-3">{t('dailyCash.description')}</th>
+                    <th className="py-2 px-3 text-right">{t('dailyCash.debitIn')}</th>
+                    <th className="py-2 px-3 text-right">{t('dailyCash.creditOut')}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100">
-                  {transactions.map((t, i) => (
+                  {transactions.map((txn, i) => (
                     <tr key={i} className="hover:bg-gray-50">
-                      <td className="py-2 px-3 text-gray-900">{t.desc}</td>
-                      <td className="py-2 px-3 text-right text-green-700 font-medium">{t.debit > 0 ? formatCurrency(t.debit) : '-'}</td>
-                      <td className="py-2 px-3 text-right text-red-700 font-medium">{t.credit > 0 ? formatCurrency(t.credit) : '-'}</td>
+                      <td className="py-2 px-3 text-gray-900">{txn.desc}</td>
+                      <td className="py-2 px-3 text-right text-green-700 font-medium">{txn.debit > 0 ? formatCurrency(txn.debit) : '-'}</td>
+                      <td className="py-2 px-3 text-right text-red-700 font-medium">{txn.credit > 0 ? formatCurrency(txn.credit) : '-'}</td>
                     </tr>
                   ))}
                 </tbody>
