@@ -218,7 +218,7 @@ function buildPrintHTML(data: ReportData, samiti?: ReportSociety | null): string
 </head>
 <body>
   <div class="doc-header">
-    <div class="society">${escapeHtml(samiti?.name || 'Samabaya Samiti')}</div>
+    <div class="society">${escapeHtml(samiti?.name || 'SocietyBooks')}</div>
     ${headerLines.join('\n    ')}
     <div class="report">${escapeHtml(data.title)}</div>
     ${data.subtitle ? `<div class="subtitle">${escapeHtml(data.subtitle)}</div>` : ''}

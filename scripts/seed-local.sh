@@ -9,6 +9,6 @@ echo "Seeding demo samiti..."
 curl -X POST "${SUPABASE_URL}/rest/v1/samiti_settings" \
   -H "apikey: ${ANON_KEY}" \
   -H "Content-Type: application/json" \
-  -d '{"samiti_name":"Samabaya Samiti Demo","samiti_code":"SAM001","shares_enabled":false,"share_value":0,"default_profit_method":"reducing_balance","default_profit_rate":12.00}'
+  -d '{"samiti_name":"SocietyBooks Demo","samiti_code":"SAM001","shares_enabled":false,"share_value":0,"default_profit_method":"reducing_balance","default_profit_rate":12.00}'
 
 echo "Done seeding."

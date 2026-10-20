@@ -33,7 +33,7 @@ export function generatePassbookHTML(transactions: {
       </style>
     </head>
     <body>
-      <h1>Samabaya Samiti</h1>
+      <h1>SocietyBooks</h1>
       <h2>Passbook / Statement of Account</h2>
       <div class="header-info">
         <p><strong>Member:</strong> ${memberName}</p>

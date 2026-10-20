@@ -2,7 +2,7 @@
 INSERT INTO samiti_settings (id, samiti_name, samiti_code, shares_enabled, share_value, default_profit_method, default_profit_rate)
 VALUES (
   gen_random_uuid(),
-  'Samabaya Samiti Demo',
+  'SocietyBooks Demo',
   'SAM001',
   false,
   0,

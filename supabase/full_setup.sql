@@ -1,5 +1,5 @@
 -- =============================================================
--- Samabaya Samiti — Full Database Setup
+-- SocietyBooks — Full Database Setup
 -- Paste this entire file into Supabase SQL Editor and run once.
 -- =============================================================
 
@@ -359,7 +359,7 @@ DECLARE
 BEGIN
   -- Insert demo samiti
   INSERT INTO samiti_settings (id, samiti_name, samiti_code, shares_enabled, share_value, default_profit_method, default_profit_rate)
-  VALUES (gen_random_uuid(), 'Samabaya Samiti Demo', 'SAM001', false, 0, 'reducing_balance', 12.00)
+  VALUES (gen_random_uuid(), 'SocietyBooks Demo', 'SAM001', false, 0, 'reducing_balance', 12.00)
   RETURNING id INTO v_samiti_id;
 
   -- Seed chart of accounts for this samiti

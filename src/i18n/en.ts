@@ -93,7 +93,7 @@ export const en = {
   },
 
   layout: {
-    appName: 'Samabaya Samiti',
+    appName: 'SocietyBooks',
     footer: 'Powered by Code Prophet Inc.',
     userMenu: 'User menu',
     mobileMenu: 'Menu',

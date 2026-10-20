@@ -1,4 +1,4 @@
-# Samabaya Samiti — Cooperative Management System
+# SocietyBooks — Cooperative Management System
 
 A full-stack cooperative (samiti) management system built with React, TypeScript, and Supabase. Supports member management, savings accounts, loans with EMI schedules, double-entry accounting, profit distribution, and role-based access control.
 

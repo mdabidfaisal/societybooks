@@ -1,4 +1,4 @@
-# Samabaya Samiti — Full Development Plan
+# SocietyBooks — Full Development Plan
 
 ## Stack
 
